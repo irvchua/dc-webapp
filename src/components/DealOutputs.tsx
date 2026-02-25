@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { DealOutput } from "@/lib/dealCalc";
 import { buildWholesaleTable } from "@/lib/wholesaleTable";
 import { WholesaleTable } from "@/components/WholesaleTable";
+import { WholesaleSnapshotModal } from "@/components/WholesaleSnapshotModal";
 
 function money(n: number | null) {
   if (n === null || !Number.isFinite(n)) return "—";
@@ -15,6 +17,8 @@ function num(n: number | null) {
 }
 
 export function DealOutputs({ out }: { out: DealOutput }) {
+  const [isWholesaleSnapshotOpen, setIsWholesaleSnapshotOpen] = useState(false);
+
   const hardCosts =
     (out.retailCommission ?? 0) +
     (out.retailClosingCosts ?? 0) +
@@ -29,28 +33,37 @@ export function DealOutputs({ out }: { out: DealOutput }) {
     hardCosts,
   });
 
+  const wholesaleSnapshotRows = useMemo(
+    () => [
+      { label: "Investor Max Buy Price (Flip MAO)", value: money(out.flipMao), strong: true },
+      { label: "ARV", value: money(out.usedArv), strong: false },
+      { label: "Estimated Repairs + Adjustments", value: money(out.rehabTotal), strong: false },
+      { label: "Net ARV (ARV minus repairs)", value: money(out.netArv), strong: false },
+      { label: "Investor Selling + Holding + Mansion Tax", value: money(out.feesToRetail), strong: false },
+    ],
+    [out]
+  );
+
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-        <div style={{ fontWeight: 900 }}>Wholesale Snapshot</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>Investor Max Buy Price (Flip MAO)</div>
-          <div style={{ textAlign: "right", fontWeight: 900 }}>{money(out.flipMao)}</div>
-
-          <div>ARV</div>
-          <div style={{ textAlign: "right", fontWeight: 700 }}>{money(out.usedArv)}</div>
-
-          <div>Estimated Repairs + Adjustments</div>
-          <div style={{ textAlign: "right", fontWeight: 700 }}>{money(out.rehabTotal)}</div>
-
-          <div>Net ARV (ARV minus repairs)</div>
-          <div style={{ textAlign: "right", fontWeight: 700 }}>{money(out.netArv)}</div>
-
-          <div>Investor Selling + Holding + Mansion Tax</div>
-          <div style={{ textAlign: "right", fontWeight: 700 }}>{money(out.feesToRetail)}</div>
+      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontWeight: 900 }}>Outputs</div>
+          <button
+            type="button"
+            onClick={() => setIsWholesaleSnapshotOpen(true)}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            View Wholesale Snapshot
+          </button>
         </div>
       </div>
+
+      <WholesaleSnapshotModal
+        isOpen={isWholesaleSnapshotOpen}
+        onClose={() => setIsWholesaleSnapshotOpen(false)}
+        rows={wholesaleSnapshotRows}
+      />
 
       <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
         <div style={{ fontWeight: 900 }}>Novation</div>
