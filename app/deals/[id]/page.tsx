@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
@@ -20,23 +20,45 @@ export default function DealPage() {
 
   const out = useMemo(() => (deal ? calcDeal(deal) : null), [deal]);
 
+  const [stackColumns, setStackColumns] = useState(false);
+
+  useEffect(() => {
+    const updateLayout = () => setStackColumns(window.innerWidth < 1360);
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
+
   if (!deal) {
     return (
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: 20 }}>
+      <main
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: "32px 20px 40px",
+        }}
+      >
         <div style={{ display: "grid", gap: 10 }}>
           <button
             onClick={() => router.push("/")}
             style={{
               width: "fit-content",
               padding: "10px 14px",
-              borderRadius: 12,
-              border: "1px solid #ddd",
+              borderRadius: 10,
+              border: "1px solid #cbd5e1",
+              background: "#fff",
+              cursor: "pointer",
             }}
           >
             ← Back
           </button>
           <div
-            style={{ padding: 14, border: "1px solid #eee", borderRadius: 14 }}
+            style={{
+              padding: 16,
+              border: "1px solid #e2e8f0",
+              borderRadius: 14,
+              background: "#ffffff",
+            }}
           >
             Deal not found.
           </div>
@@ -48,11 +70,11 @@ export default function DealPage() {
   return (
     <main
       style={{
-        maxWidth: 1100,
+        maxWidth: 1180,
         margin: "0 auto",
-        padding: 20,
+        padding: "28px 20px 40px",
         display: "grid",
-        gap: 14,
+        gap: 16,
       }}
     >
       <header
@@ -61,18 +83,30 @@ export default function DealPage() {
           justifyContent: "space-between",
           gap: 12,
           alignItems: "center",
+          background: "#fff",
+          border: "1px solid #e5eaf1",
+          borderRadius: 16,
+          padding: "14px 16px",
+          boxShadow: "0 8px 20px rgba(15, 23, 42, 0.05)",
+          flexWrap: "wrap",
         }}
       >
         <button
           onClick={() => router.push("/")}
           style={{
             padding: "10px 14px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
+            background: "#f8fafc",
+            cursor: "pointer",
           }}
         >
           ← Back
         </button>
+
+        <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>
+          {deal.propertyLabel}
+        </div>
 
         <button
           onClick={() => {
@@ -81,9 +115,12 @@ export default function DealPage() {
           }}
           style={{
             padding: "10px 14px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
+            borderRadius: 10,
+            border: "1px solid #0f60ff",
+            background: "#1463ff",
+            color: "#fff",
             fontWeight: 800,
+            cursor: "pointer",
           }}
         >
           Save Deal
@@ -93,7 +130,9 @@ export default function DealPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1.2fr 0.8fr",
+          gridTemplateColumns: stackColumns
+            ? "minmax(0, 1fr)"
+            : "minmax(0, 1.35fr) minmax(360px, 0.85fr)",
           gap: 14,
           alignItems: "start",
         }}
