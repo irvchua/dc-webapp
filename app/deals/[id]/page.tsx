@@ -130,9 +130,7 @@ export default function DealPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: stackColumns
-            ? "minmax(0, 1fr)"
-            : "minmax(0, 1.35fr) minmax(360px, 0.85fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: 14,
           alignItems: "start",
         }}
