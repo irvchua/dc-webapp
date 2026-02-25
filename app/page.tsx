@@ -9,6 +9,10 @@ import { makeDefaultDeal } from "@/lib/DefaultDeal";
 export default function Page() {
   const [deals, setDeals] = useState<DealInput[]>(() => loadDeals());
   const sorted = useMemo(() => deals.slice(), [deals]);
+  const formatSqft = (value: unknown) => {
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(n) ? n.toLocaleString() : "—";
+  };
 
   return (
     <main

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
@@ -19,6 +19,15 @@ export default function DealPage() {
   });
 
   const out = useMemo(() => (deal ? calcDeal(deal) : null), [deal]);
+
+  const [stackColumns, setStackColumns] = useState(false);
+
+  useEffect(() => {
+    const updateLayout = () => setStackColumns(window.innerWidth < 1360);
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
 
   if (!deal) {
     return (
