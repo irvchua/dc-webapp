@@ -15,22 +15,33 @@ export default function Page() {
       style={{
         maxWidth: 1100,
         margin: "0 auto",
-        padding: 20,
+        padding: "32px 20px 40px",
         display: "grid",
-        gap: 14,
+        gap: 18,
       }}
     >
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 16,
           alignItems: "center",
+          flexWrap: "wrap",
+          background: "#ffffff",
+          borderRadius: 18,
+          border: "1px solid #e5eaf1",
+          boxShadow: "0 8px 25px rgba(17, 24, 39, 0.06)",
+          padding: "20px 22px",
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 900 }}>
-          Deal Calculator
-        </h1>
+        <div style={{ display: "grid", gap: 4 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>
+            Deal Calculator
+          </h1>
+          <div style={{ color: "#6b7280", fontSize: 14 }}>
+            Create and manage your acquisition scenarios.
+          </div>
+        </div>
 
         <button
           onClick={() => {
@@ -40,10 +51,13 @@ export default function Page() {
             saveDeals(updated);
           }}
           style={{
-            padding: "10px 14px",
+            padding: "11px 16px",
             borderRadius: 12,
-            border: "1px solid #ddd",
+            border: "1px solid #0f60ff",
+            background: "#1463ff",
+            color: "#fff",
             fontWeight: 700,
+            cursor: "pointer",
           }}
         >
           + New Deal
@@ -53,44 +67,51 @@ export default function Page() {
       {sorted.length === 0 ? (
         <div
           style={{
-            padding: 14,
-            border: "1px solid #eee",
-            borderRadius: 14,
-            opacity: 0.8,
+            padding: 18,
+            border: "1px dashed #cbd5e1",
+            borderRadius: 16,
+            color: "#475569",
+            background: "#f8fafc",
           }}
         >
-          No deals yet. Click “New Deal”.
+          No deals yet. Click <strong>New Deal</strong> to create your first one.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {sorted.map((d) => (
             <div
               key={d.id}
               style={{
-                padding: 14,
-                border: "1px solid #eee",
+                padding: 16,
+                border: "1px solid #e6ebf2",
                 borderRadius: 14,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 gap: 12,
+                flexWrap: "wrap",
+                background: "#fff",
+                boxShadow: "0 4px 14px rgba(15, 23, 42, 0.04)",
               }}
             >
               <div style={{ display: "grid", gap: 4 }}>
-                <div style={{ fontWeight: 900 }}>{d.propertyLabel}</div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  Sqft: {d.subjectSqft}
+                <div style={{ fontWeight: 800, fontSize: 16 }}>{d.propertyLabel}</div>
+                <div style={{ fontSize: 13, color: "#64748b" }}>
+                  {d.subjectSqft.toLocaleString()} sqft
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Link
                   href={`/deals/${d.id}`}
                   style={{
                     padding: "10px 14px",
-                    borderRadius: 12,
-                    border: "1px solid #ddd",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
                     fontWeight: 700,
+                    color: "#1e293b",
+                    textDecoration: "none",
+                    background: "#f8fafc",
                   }}
                 >
                   Edit Deal
@@ -104,8 +125,11 @@ export default function Page() {
                   }}
                   style={{
                     padding: "10px 14px",
-                    borderRadius: 12,
-                    border: "1px solid #ddd",
+                    borderRadius: 10,
+                    border: "1px solid #fecaca",
+                    background: "#fff1f2",
+                    color: "#9f1239",
+                    cursor: "pointer",
                   }}
                 >
                   Delete
