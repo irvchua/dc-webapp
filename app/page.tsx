@@ -101,7 +101,7 @@ export default function Page() {
               <div style={{ display: "grid", gap: 4 }}>
                 <div style={{ fontWeight: 800, fontSize: 16 }}>{d.propertyLabel}</div>
                 <div style={{ fontSize: 13, color: "#64748b" }}>
-                  {formatSqft(d.subjectSqft)} sqft
+                  {d.subjectSqft.toLocaleString()} sqft
                 </div>
               </div>
 
