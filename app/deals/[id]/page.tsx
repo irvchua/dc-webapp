@@ -50,7 +50,7 @@ export default function DealPage() {
               cursor: "pointer",
             }}
           >
-            ← Back
+            {"<-"} Back
           </button>
           <div
             style={{
@@ -70,7 +70,7 @@ export default function DealPage() {
   return (
     <main
       style={{
-        maxWidth: 1180,
+        maxWidth: 1300,
         margin: "0 auto",
         padding: "28px 20px 40px",
         display: "grid",
@@ -101,12 +101,10 @@ export default function DealPage() {
             cursor: "pointer",
           }}
         >
-          ← Back
+          {"<-"} Back
         </button>
 
-        <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>
-          {deal.propertyLabel}
-        </div>
+        <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>{deal.propertyLabel}</div>
 
         <button
           onClick={() => {
@@ -130,20 +128,46 @@ export default function DealPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gridTemplateColumns: stackColumns ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)",
           gap: 14,
           alignItems: "start",
         }}
       >
         <DealForm
           deal={deal}
+          out={out}
           onChange={(next) => {
             setDeal(next);
-            // autosave optional:
-            // upsertDeal(next);
           }}
         />
-        {out && <DealOutputs out={out} />}
+
+        <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+          <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, background: "#fff", display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 12, opacity: 0.75 }}>Purchase Price</div>
+            <input
+              inputMode="decimal"
+              type="number"
+              step={1000}
+              value={deal.purchasePrice}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setDeal({ ...deal, purchasePrice: raw === "" ? 0 : Number(raw) || 0 });
+              }}
+              style={{
+                padding: "14px 16px",
+                border: "2px solid #cbd5e1",
+                borderRadius: 12,
+                fontSize: 22,
+                fontWeight: 800,
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          {out && <DealOutputs out={out} />}
+        </div>
       </div>
     </main>
   );

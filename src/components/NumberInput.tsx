@@ -9,7 +9,7 @@ type Props = {
 
 export function NumberInput({ label, value, onChange, step = 1 }: Props) {
   return (
-    <label style={{ display: "grid", gap: 6 }}>
+    <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
       <div style={{ fontSize: 12, opacity: 0.75 }}>{label}</div>
       <input
         inputMode="decimal"
@@ -26,6 +26,9 @@ export function NumberInput({ label, value, onChange, step = 1 }: Props) {
           padding: "10px 12px",
           border: "1px solid #ddd",
           borderRadius: 10,
+          width: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
         }}
       />
     </label>
