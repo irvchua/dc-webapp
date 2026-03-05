@@ -16,32 +16,11 @@ export default function HomePageClient() {
   const sorted = useMemo(() => deals.slice(), [deals]);
 
   return (
-    <main
-      style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        padding: "32px 20px 40px",
-        display: "grid",
-        gap: 18,
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 16,
-          alignItems: "center",
-          flexWrap: "wrap",
-          background: "#ffffff",
-          borderRadius: 18,
-          border: "1px solid #e5eaf1",
-          boxShadow: "0 8px 25px rgba(17, 24, 39, 0.06)",
-          padding: "20px 22px",
-        }}
-      >
+    <main className="shell" style={{ maxWidth: 1200 }}>
+      <header className="card topbar" style={{ boxShadow: "var(--shadow-soft)" }}>
         <div style={{ display: "grid", gap: 4 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Deal Calculator</h1>
-          <div style={{ color: "#6b7280", fontSize: 14 }}>Summary dashboard</div>
+          <h1 className="title">Deal Calculator</h1>
+          <div className="muted" style={{ fontSize: 14 }}>Summary dashboard</div>
         </div>
 
         <button
@@ -51,26 +30,19 @@ export default function HomePageClient() {
             setDeals(updated);
             saveDeals(updated);
           }}
-          style={{
-            padding: "11px 16px",
-            borderRadius: 12,
-            border: "1px solid #0f60ff",
-            background: "#1463ff",
-            color: "#fff",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
+          className="btn btn-primary"
+          style={{ padding: "11px 16px" }}
         >
-          + New Deal
+          <span className="btn-content"><span className="btn-icon" aria-hidden="true">+</span><span>New Deal</span></span>
         </button>
       </header>
 
       {sorted.length === 0 ? (
         <div
+          className="card"
           style={{
             padding: 18,
-            border: "1px dashed #cbd5e1",
-            borderRadius: 16,
+            borderStyle: "dashed",
             color: "#475569",
             background: "#f8fafc",
           }}
@@ -82,35 +54,14 @@ export default function HomePageClient() {
           {sorted.map((d) => {
             const out = calcDeal(d);
             return (
-              <div
-                key={d.id}
-                style={{
-                  padding: 16,
-                  border: "1px solid #e6ebf2",
-                  borderRadius: 14,
-                  display: "grid",
-                  gap: 12,
-                  background: "#fff",
-                  boxShadow: "0 4px 14px rgba(15, 23, 42, 0.04)",
-                }}
-              >
+              <div key={d.id} className="card" style={{ padding: 16, display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                   <div style={{ display: "grid", gap: 4 }}>
                     <div style={{ fontWeight: 800, fontSize: 16 }}>{d.propertyLabel}</div>
-                    <div style={{ fontSize: 13, color: "#64748b" }}>{d.propertyAddress || "No address"}</div>
+                    <div className="muted" style={{ fontSize: 13 }}>{d.propertyAddress || "No address"}</div>
                   </div>
 
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      padding: "4px 10px",
-                      borderRadius: 999,
-                      background: out.isComplete ? "#dcfce7" : "#fff7ed",
-                      color: out.isComplete ? "#166534" : "#9a3412",
-                      border: `1px solid ${out.isComplete ? "#86efac" : "#fdba74"}`,
-                    }}
-                  >
+                  <div className={`status-badge ${out.isComplete ? "status-ok" : "status-warn"}`}>
                     {out.isComplete ? "Complete" : "Needs Inputs"}
                   </div>
                 </div>
@@ -123,19 +74,8 @@ export default function HomePageClient() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Link
-                    href={`/deals/${d.id}`}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "1px solid #cbd5e1",
-                      fontWeight: 700,
-                      color: "#1e293b",
-                      textDecoration: "none",
-                      background: "#f8fafc",
-                    }}
-                  >
-                    Edit Deal
+                  <Link href={`/deals/${d.id}`} className="btn">
+                    <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#9998;</span><span>Edit Deal</span></span>
                   </Link>
 
                   <button
@@ -144,16 +84,9 @@ export default function HomePageClient() {
                       const updated = loadDeals();
                       setDeals(updated);
                     }}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "1px solid #fecaca",
-                      background: "#fff1f2",
-                      color: "#9f1239",
-                      cursor: "pointer",
-                    }}
+                    className="btn btn-danger"
                   >
-                    Delete
+                    <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#128465;</span><span>Delete</span></span>
                   </button>
                 </div>
               </div>
@@ -167,9 +100,11 @@ export default function HomePageClient() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #edf2f7", background: "#fafcff" }}>
-      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 2 }}>{label}</div>
+    <div className="metric-tile">
+      <div className="label" style={{ marginBottom: 2 }}>{label}</div>
       <div style={{ fontWeight: 800 }}>{value}</div>
     </div>
   );
 }
+
+

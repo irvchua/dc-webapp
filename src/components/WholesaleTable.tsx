@@ -16,18 +16,18 @@ function pct2(n: number) {
 export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
   if (!rows.length) {
     return (
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, opacity: 0.75 }}>
+      <div className="section-card card" style={{ opacity: 0.75 }}>
         Enter comps and assumptions to generate wholesale ranges.
       </div>
     );
   }
 
   return (
-    <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-      <div style={{ fontWeight: 900, marginBottom: 10 }}>Wholesale Assignment Table</div>
+    <div className="section-card card">
+      <div style={{ fontWeight: 900 }}>Wholesale Assignment Table</div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
+      <div className="table-wrap">
+        <table className="table" style={{ minWidth: 920 }}>
           <thead>
             <tr>
               {[
@@ -39,17 +39,7 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
                 "Cash-on-Cash",
                 "Out of Pocket",
               ].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    padding: "8px 10px",
-                    borderBottom: "1px solid #eee",
-                    fontSize: 12,
-                    opacity: 0.7,
-                    whiteSpace: "nowrap",
-                    textAlign: "left",
-                  }}
-                >
+                <th key={h} style={{ whiteSpace: "nowrap" }}>
                   {h}
                 </th>
               ))}
@@ -59,24 +49,22 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
           <tbody>
             {rows.map((r) => (
               <tr key={r.pct}>
-                <td style={{ padding: "8px 10px", fontWeight: 800 }}>{pct(r.pct)}</td>
-                <td style={{ padding: "8px 10px" }}>{money(r.wholesaleFee)}</td>
-                <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.investorSellPrice)}</td>
-                <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.allIn)}</td>
-                <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.profit)}</td>
-                <td style={{ padding: "8px 10px" }}>{pct2(r.cashOnCash)}</td>
-                <td style={{ padding: "8px 10px" }}>{money(r.outOfPocket)}</td>
+                <td style={{ fontWeight: 800 }}>{pct(r.pct)}</td>
+                <td>{money(r.wholesaleFee)}</td>
+                <td style={{ fontWeight: 800 }}>{money(r.investorSellPrice)}</td>
+                <td style={{ fontWeight: 800 }}>{money(r.allIn)}</td>
+                <td style={{ fontWeight: 800 }}>{money(r.profit)}</td>
+                <td>{pct2(r.cashOnCash)}</td>
+                <td>{money(r.outOfPocket)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+      <div style={{ fontSize: 12 }} className="muted">
         Wholesale Fee = (ARV - Projected Buyer Total Costs) x Wholesale %. All In = Projected Buyer Total Costs + Wholesale Fee.
       </div>
     </div>
   );
 }
-
-
