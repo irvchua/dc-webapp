@@ -72,6 +72,7 @@ export type DealInput = {
   sellerRetailExpensePct: number;
 
   purchasePrice: number;
+  lastSavedAt?: string | null;
 };
 
 export type DealOutput = {
@@ -172,6 +173,7 @@ function mansionTaxPct(arv: number): number {
 function makeWholesaleRows(params: {
   arv: number;
   purchasePrice: number;
+  lastSavedAt?: string | null;
   rehabCost: number;
   hardCosts: number;
 }): WholesaleRow[] {
@@ -356,6 +358,7 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     agedCompDays,
   };
 }
+
 
 
 

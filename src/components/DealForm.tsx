@@ -41,7 +41,7 @@ export function DealForm({ deal, out, onChange }: Props) {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
             <NumberInput label="SQFT" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
-            <NumberInput label="Lot Size" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
+            <NumberInput label="Lot Size (Sqft)" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
 
             <label className="input-wrap">
               <div className="label">Bed / Bath</div>
@@ -218,3 +218,4 @@ export function DealForm({ deal, out, onChange }: Props) {
     </div>
   );
 }
+

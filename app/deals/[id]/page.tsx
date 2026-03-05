@@ -8,6 +8,13 @@ import { loadDeals, upsertDeal } from "@/lib/storage";
 import { DealForm } from "@/components/DealForm";
 import { DealOutputs } from "@/components/DealOutputs";
 
+function formatSavedAt(value: string | null | undefined) {
+  if (!value) return "Not saved yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not saved yet";
+  return `Saved ${date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+}
+
 export default function DealPage() {
   const params = useParams();
   const id = (params?.id as string) ?? "";
@@ -17,6 +24,7 @@ export default function DealPage() {
     const deals = loadDeals();
     return deals.find((d) => d.id === id) ?? null;
   });
+  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
 
   const out = useMemo(() => (deal ? calcDeal(deal) : null), [deal]);
 
@@ -28,6 +36,12 @@ export default function DealPage() {
     window.addEventListener("resize", updateLayout);
     return () => window.removeEventListener("resize", updateLayout);
   }, []);
+
+  useEffect(() => {
+    if (saveState !== "saved") return;
+    const timer = window.setTimeout(() => setSaveState("idle"), 1800);
+    return () => window.clearTimeout(timer);
+  }, [saveState]);
 
   if (!deal) {
     return (
@@ -51,15 +65,23 @@ export default function DealPage() {
 
         <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>{deal.propertyLabel}</div>
 
-        <button
-          onClick={() => {
-            upsertDeal(deal);
-            alert("Saved");
-          }}
-          className="btn btn-primary"
-        >
-          <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#128190;</span><span>Save Deal</span></span>
-        </button>
+        <div style={{ display: "grid", justifyItems: "end", gap: 6 }}>
+          <button
+            onClick={() => {
+              const nowIso = new Date().toISOString();
+              const nextDeal = { ...deal, lastSavedAt: nowIso };
+              upsertDeal(nextDeal);
+              setDeal(nextDeal);
+              setSaveState("saved");
+            }}
+            className="btn btn-primary"
+          >
+            <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#128190;</span><span>Save Deal</span></span>
+          </button>
+          <div className="muted" style={{ minHeight: 18, fontSize: 12, fontWeight: 700, color: saveState === "saved" ? "var(--success-text)" : undefined }}>
+            {saveState === "saved" ? "Saved just now" : formatSavedAt(deal.lastSavedAt)}
+          </div>
+        </div>
       </header>
 
       <div
@@ -101,5 +123,3 @@ export default function DealPage() {
     </main>
   );
 }
-
-

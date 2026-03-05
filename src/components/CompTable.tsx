@@ -15,16 +15,16 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
       <div style={{ fontWeight: 800 }}>{title}</div>
 
       <div className="table-wrap">
-        <table className="table" style={{ minWidth: 1120, tableLayout: "fixed" }}>
+        <table className="table" style={{ minWidth: 1060, tableLayout: "auto" }}>
           <colgroup>
-            {["24%", "10%", "9%", "10%", "9%", "12%", "10%", "14%", "8%"].map((w) => (
-              <col key={w} style={{ width: w }} />
+            {["19%", "9%", "10%", "11%", "10%", "11%", "8%", "14%", "8%"].map((w, idx) => (
+              <col key={`${w}-${idx}`} style={{ width: w }} />
             ))}
           </colgroup>
 
           <thead>
             <tr>
-              {["Address", "Bed/Bath", "Year Built", "Lot Size", "Sqft", "Price", "$ / Sqft", "Date", "Days"].map((h) => (
+              {["Address", "Bed/Bath", "Year Built", "Lot Size (Sqft)", "Sqft", "Price", "$ / Sqft", "Date", "Days"].map((h) => (
                 <th key={h}>{h}</th>
               ))}
             </tr>
@@ -34,7 +34,7 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
             {comps.map((c, idx) => {
               const ppsf = c.price && c.sqft && c.sqft > 0 ? c.price / c.sqft : null;
               return (
-                <tr key={idx}>
+                <tr key={`${title}-row-${idx}`}>
                   <td>
                     <input
                       className="field"
@@ -63,6 +63,7 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                       className="field"
                       type="number"
                       inputMode="numeric"
+                      style={{ padding: "10px 8px" }}
                       value={c.yearBuilt ?? ""}
                       onChange={(e) => {
                         const next = comps.slice();
@@ -77,6 +78,7 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                       className="field"
                       type="number"
                       inputMode="decimal"
+                      style={{ padding: "10px 8px" }}
                       value={c.lotSize ?? ""}
                       onChange={(e) => {
                         const next = comps.slice();
@@ -91,6 +93,7 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                       className="field"
                       type="number"
                       inputMode="decimal"
+                      style={{ padding: "10px 8px" }}
                       value={c.sqft ?? ""}
                       onChange={(e) => {
                         const next = comps.slice();
@@ -113,7 +116,7 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                       }}
                     />
                   </td>
-                  <td style={{ fontWeight: 700, color: "#1e3a8a" }}>{ppsf ? ppsf.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "-"}</td>
+                  <td style={{ fontWeight: 700, color: "#1e3a8a", whiteSpace: "nowrap" }}>{ppsf ? ppsf.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "-"}</td>
                   <td>
                     <input
                       className="field"
@@ -124,10 +127,10 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                         next[idx] = { ...next[idx], date: e.target.value || null };
                         onChange(next);
                       }}
-                      style={{ minWidth: 125, padding: "10px 5px" }}
+                      style={{ width: "100%", minWidth: 145, paddingRight: 10 }}
                     />
                   </td>
-                  <td className="muted" style={{ fontWeight: 700 }}>{agedDays[idx] ?? "-"}</td>
+                  <td className="muted" style={{ fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{agedDays[idx] ?? "-"}</td>
                 </tr>
               );
             })}
@@ -137,3 +140,4 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
     </div>
   );
 }
+
