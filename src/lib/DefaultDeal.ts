@@ -59,9 +59,11 @@ export function makeDefaultDeal(partial?: Partial<DealInput>): DealInput {
     sellerRetailExpensePct: 0.07,
 
     purchasePrice: 50000,
+    lastSavedAt: null,
 
     ...partial,
   };
 }
+
 
 

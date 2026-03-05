@@ -101,6 +101,7 @@ function migrateLegacyDeal(rawValue: unknown): DealInput {
     sellerRetailExpensePct: toNumber(raw.sellerRetailExpensePct, base.sellerRetailExpensePct),
 
     purchasePrice: toNumber(raw.purchasePrice, base.purchasePrice),
+    lastSavedAt: typeof raw.lastSavedAt === "string" ? raw.lastSavedAt : null,
   };
 }
 
@@ -161,5 +162,6 @@ export function deleteDeal(id: string) {
   const deals = loadDeals().filter((d) => d.id !== id);
   saveDeals(deals);
 }
+
 
 

@@ -243,6 +243,16 @@ button {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.25s ease;
 }
 
+.field[type="number"]::-webkit-outer-spin-button,
+.field[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.field[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 .field:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
@@ -428,6 +438,7 @@ button {
     transition: none !important;
   }
 }
+
 
 
 
