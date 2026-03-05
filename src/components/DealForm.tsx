@@ -16,40 +16,26 @@ export function DealForm({ deal, out, onChange }: Props) {
   const emptyAges = [null, null, null, null, null] as Array<number | null>;
   const pctForInput = (decimal: number) => Number((decimal * 100).toFixed(4));
 
-
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 10 }}>
+      <div className="section-card card">
         <div style={{ fontWeight: 900 }}>Subject Property</div>
-
 
         <div style={{ display: "grid", gap: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>Deal Label</div>
-              <input
-                value={deal.propertyLabel}
-                onChange={(e) => set({ propertyLabel: e.target.value })}
-                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-              />
+            <label className="input-wrap">
+              <div className="label">Deal Label</div>
+              <input className="field" value={deal.propertyLabel} onChange={(e) => set({ propertyLabel: e.target.value })} />
             </label>
 
-            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>Property Address</div>
-              <input
-                value={deal.propertyAddress}
-                onChange={(e) => set({ propertyAddress: e.target.value })}
-                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-              />
+            <label className="input-wrap">
+              <div className="label">Property Address</div>
+              <input className="field" value={deal.propertyAddress} onChange={(e) => set({ propertyAddress: e.target.value })} />
             </label>
 
-            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>Owner Name</div>
-              <input
-                value={deal.ownerName}
-                onChange={(e) => set({ ownerName: e.target.value })}
-                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-              />
+            <label className="input-wrap">
+              <div className="label">Owner Name</div>
+              <input className="field" value={deal.ownerName} onChange={(e) => set({ ownerName: e.target.value })} />
             </label>
           </div>
 
@@ -57,13 +43,9 @@ export function DealForm({ deal, out, onChange }: Props) {
             <NumberInput label="SQFT" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
             <NumberInput label="Lot Size" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
 
-            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>Bed / Bath</div>
-              <input
-                value={deal.bedBath}
-                onChange={(e) => set({ bedBath: e.target.value })}
-                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-              />
+            <label className="input-wrap">
+              <div className="label">Bed / Bath</div>
+              <input className="field" value={deal.bedBath} onChange={(e) => set({ bedBath: e.target.value })} />
             </label>
           </div>
         </div>
@@ -94,7 +76,7 @@ export function DealForm({ deal, out, onChange }: Props) {
         onChange={(v) => set({ asIsActive: v })}
       />
 
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
+      <div className="section-card card" style={{ gap: 12 }}>
         <div style={{ fontWeight: 900 }}>Novation Assumptions</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
@@ -132,7 +114,7 @@ export function DealForm({ deal, out, onChange }: Props) {
         onChange={(v) => set({ arvActive: v })}
       />
 
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
+      <div className="section-card card" style={{ gap: 12 }}>
         <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
@@ -143,26 +125,18 @@ export function DealForm({ deal, out, onChange }: Props) {
             step={5000}
           />
 
-          <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Rehab Type</div>
-            <select
-              value={deal.rehabType}
-              onChange={(e) => set({ rehabType: e.target.value as RehabType })}
-              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-            >
+          <label className="input-wrap">
+            <div className="label">Rehab Type</div>
+            <select className="field" value={deal.rehabType} onChange={(e) => set({ rehabType: e.target.value as RehabType })}>
               <option>Partial Loss</option>
               <option>Total Loss</option>
               <option>New Construction</option>
             </select>
           </label>
 
-          <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Damage Type</div>
-            <select
-              value={deal.damageType}
-              onChange={(e) => set({ damageType: e.target.value as DamageType })}
-              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-            >
+          <label className="input-wrap">
+            <div className="label">Damage Type</div>
+            <select className="field" value={deal.damageType} onChange={(e) => set({ damageType: e.target.value as DamageType })}>
               <option>Light</option>
               <option>Moderate</option>
               <option>Heavy</option>
@@ -178,7 +152,7 @@ export function DealForm({ deal, out, onChange }: Props) {
         </div>
       </div>
 
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
+      <div className="section-card card" style={{ gap: 12 }}>
         <div style={{ fontWeight: 900 }}>Holding Costs and Fees</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
@@ -244,11 +218,3 @@ export function DealForm({ deal, out, onChange }: Props) {
     </div>
   );
 }
-
-
-
-
-
-
-
-

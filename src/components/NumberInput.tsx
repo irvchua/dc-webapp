@@ -9,9 +9,10 @@ type Props = {
 
 export function NumberInput({ label, value, onChange, step = 1 }: Props) {
   return (
-    <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
-      <div style={{ fontSize: 12, opacity: 0.75 }}>{label}</div>
+    <label className="input-wrap">
+      <div className="label">{label}</div>
       <input
+        className="field"
         inputMode="decimal"
         type="number"
         step={step}
@@ -21,14 +22,6 @@ export function NumberInput({ label, value, onChange, step = 1 }: Props) {
           if (raw === "") return onChange(null);
           const n = Number(raw);
           onChange(Number.isFinite(n) ? n : null);
-        }}
-        style={{
-          padding: "10px 12px",
-          border: "1px solid #ddd",
-          borderRadius: 10,
-          width: "100%",
-          minWidth: 0,
-          boxSizing: "border-box",
         }}
       />
     </label>

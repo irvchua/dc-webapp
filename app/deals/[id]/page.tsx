@@ -31,77 +31,22 @@ export default function DealPage() {
 
   if (!deal) {
     return (
-      <main
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "32px 20px 40px",
-        }}
-      >
+      <main className="shell" style={{ maxWidth: 1100 }}>
         <div style={{ display: "grid", gap: 10 }}>
-          <button
-            onClick={() => router.push("/")}
-            style={{
-              width: "fit-content",
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid #cbd5e1",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            {"<-"} Back
+          <button onClick={() => router.push("/")} className="btn" style={{ width: "fit-content" }}>
+            <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#8592;</span><span>Back</span></span>
           </button>
-          <div
-            style={{
-              padding: 16,
-              border: "1px solid #e2e8f0",
-              borderRadius: 14,
-              background: "#ffffff",
-            }}
-          >
-            Deal not found.
-          </div>
+          <div className="card section-card">Deal not found.</div>
         </div>
       </main>
     );
   }
 
   return (
-    <main
-      style={{
-        maxWidth: 1300,
-        margin: "0 auto",
-        padding: "28px 20px 40px",
-        display: "grid",
-        gap: 16,
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "center",
-          background: "#fff",
-          border: "1px solid #e5eaf1",
-          borderRadius: 16,
-          padding: "14px 16px",
-          boxShadow: "0 8px 20px rgba(15, 23, 42, 0.05)",
-          flexWrap: "wrap",
-        }}
-      >
-        <button
-          onClick={() => router.push("/")}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #cbd5e1",
-            background: "#f8fafc",
-            cursor: "pointer",
-          }}
-        >
-          {"<-"} Back
+    <main className="shell">
+      <header className="card topbar">
+        <button onClick={() => router.push("/")} className="btn">
+          <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#8592;</span><span>Back</span></span>
         </button>
 
         <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>{deal.propertyLabel}</div>
@@ -111,17 +56,9 @@ export default function DealPage() {
             upsertDeal(deal);
             alert("Saved");
           }}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #0f60ff",
-            background: "#1463ff",
-            color: "#fff",
-            fontWeight: 800,
-            cursor: "pointer",
-          }}
+          className="btn btn-primary"
         >
-          Save Deal
+          <span className="btn-content"><span className="btn-icon" aria-hidden="true">&#128190;</span><span>Save Deal</span></span>
         </button>
       </header>
 
@@ -142,9 +79,10 @@ export default function DealPage() {
         />
 
         <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-          <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, background: "#fff", display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Purchase Price</div>
+          <div className="section-card card" style={{ gap: 6 }}>
+            <div className="label">Purchase Price</div>
             <input
+              className="field"
               inputMode="decimal"
               type="number"
               step={1000}
@@ -153,16 +91,7 @@ export default function DealPage() {
                 const raw = e.target.value;
                 setDeal({ ...deal, purchasePrice: raw === "" ? 0 : Number(raw) || 0 });
               }}
-              style={{
-                padding: "14px 16px",
-                border: "2px solid #cbd5e1",
-                borderRadius: 12,
-                fontSize: 22,
-                fontWeight: 800,
-                width: "100%",
-                minWidth: 0,
-                boxSizing: "border-box",
-              }}
+              style={{ padding: "14px 16px", borderWidth: 2, fontSize: 22, fontWeight: 800 }}
             />
           </div>
 
@@ -172,3 +101,5 @@ export default function DealPage() {
     </main>
   );
 }
+
+

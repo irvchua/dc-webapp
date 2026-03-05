@@ -43,26 +43,14 @@ export function DealOutputs({ out }: { out: DealOutput }) {
 
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, background: "#fff" }}>
+      <div className="section-card card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontWeight: 900 }}>Outputs</div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: out.isComplete ? "#dcfce7" : "#fff7ed",
-              color: out.isComplete ? "#166534" : "#9a3412",
-              border: `1px solid ${out.isComplete ? "#86efac" : "#fdba74"}`,
-            }}
-          >
-            {out.isComplete ? "Ready" : "Incomplete Inputs"}
-          </div>
+          <div className={`status-badge ${out.isComplete ? "status-ok" : "status-warn"}`}>{out.isComplete ? "Ready" : "Incomplete Inputs"}</div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>As-Is and Novation</div>
         <MetricRow label="Sold As-Is $/Sqft" helper="Average of non-zero sold comp price/sqft values." value={num(out.soldAsIsPpsf)} />
         <MetricRow label="Active As-Is $/Sqft" helper="Average of non-zero active comp price/sqft values." value={num(out.activeAsIsPpsf)} />
@@ -70,7 +58,7 @@ export function DealOutputs({ out }: { out: DealOutput }) {
         <MetricRow label="MAO (Novation)" helper="Adjusted As-Is - novation closing fee - desired profit." value={money(out.maoNovation)} strong />
       </div>
 
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>ARV and Rehab</div>
         <MetricRow label="ARV Before Adjustments" helper="ARV override if provided, else combined ARV comps." value={money(out.arvBeforeAdjustments)} />
         <MetricRow label="Rehab Final Cost" helper="Custom rehab if set, else rehab type cost + damage multiplier." value={money(out.rehabFinalCost)} />
@@ -79,7 +67,7 @@ export function DealOutputs({ out }: { out: DealOutput }) {
         <MetricRow label="Adjusted ARV" helper="ARV before adjustments - (flood discount + double yellow discount)." value={money(out.adjustedArv)} strong />
       </div>
 
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Holding and Fees</div>
         <MetricRow label="Holding / Month" helper="HOA/12 + insurance/12 + taxes/12 + monthly mortgage + monthly other." value={money(out.holdingMonthly)} />
         <MetricRow label="Holding Total" helper="Holding / Month x months until sold." value={money(out.holdingTotal)} />
@@ -87,7 +75,7 @@ export function DealOutputs({ out }: { out: DealOutput }) {
         <MetricRow label="Mansion Tax %" helper="Tiered rate based on adjusted ARV." value={pct(out.mansionTaxPct)} />
       </div>
 
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Offer Planning</div>
         <MetricRow
           label="Buyer Costs (Excl. Seller Retail Expense)"
@@ -144,11 +132,9 @@ function MetricRow({ label, helper, value, strong }: { label: string; helper?: s
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10 }}>
       <div>
         <div>{label}</div>
-        {helper ? <div style={{ fontSize: 11, opacity: 0.65 }}>{helper}</div> : null}
+        {helper ? <div className="muted" style={{ fontSize: 11 }}>{helper}</div> : null}
       </div>
       <div style={{ textAlign: "right", fontWeight: strong ? 900 : 700 }}>{value}</div>
     </div>
   );
 }
-
-
