@@ -1,50 +1,81 @@
-export type Comp = {
-  sqft?: number | null;
-  price?: number | null;
-};
+import {
+  IF,
+  averageIfNonZero,
+  daysSince,
+  isFiniteNumber,
+  safeDivide,
+  vlookup,
+  xlookup,
+} from "./excelMath";
 
 export type RehabType = "Partial Loss" | "Total Loss" | "New Construction";
 export type DamageType = "Light" | "Moderate" | "Heavy";
 
+export type Comp = {
+  address: string;
+  bedBath: string;
+  yearBuilt: number | null;
+  lotSize: number | null;
+  sqft: number | null;
+  price: number | null;
+  date: string | null;
+  floodZone: boolean;
+};
+
+export type WholesaleRow = {
+  pct: number;
+  wholesaleFee: number;
+  investorSellPrice: number;
+  hardCosts: number;
+  totalCost: number;
+  allIn: number;
+  profit: number;
+  cashOnCash: number;
+  outOfPocket: number;
+};
+
 export type DealInput = {
   id: string;
   propertyLabel: string;
-
+  propertyAddress: string;
+  ownerName: string;
   subjectSqft: number;
-
-  // NEW: manual purchase price input (Excel D79)
-  purchasePrice?: number | null;
-
-  floodZone?: boolean;
-  doubleYellow?: boolean;
+  lotSize: number | null;
+  bedBath: string;
+  floodZone: boolean;
+  doubleYellow: boolean;
 
   asIsSold: Comp[];
   asIsActive: Comp[];
-
-  marketAdjustmentPct?: number;
-  closingFeePct?: number;
-  desiredProfit?: number;
-
   arvSold: Comp[];
   arvActive: Comp[];
-  inputARV?: number | null;
+
+  marketAdjustmentPct: number;
+  novationClosingFeePct: number;
+  desiredProfit: number;
+
+  inputArvOverride: number | null;
 
   rehabType: RehabType;
   damageType: DamageType;
+  rehabCustomAmount: number;
 
-  monthsUntilSold?: number;
-  annualHOA?: number;
-  annualInsurance?: number;
-  annualTaxes?: number;
+  monthsUntilSold: number;
+  annualHoa: number;
+  annualInsurance: number;
+  annualTaxes: number;
+  monthlyMortgage: number;
+  monthlyOtherHolding: number;
 
-  retailCommissionPct?: number;
-  retailClosingCostsPct?: number;
-  sellerRetailExpensePct?: number;
+  retailCommissionPct: number;
+  retailClosingCostsPct: number;
+  sellerRetailExpensePct: number;
+
+  purchasePrice: number;
 };
 
 export type DealOutput = {
-  // echo input for convenience
-  purchasePrice: number | null;
+  isComplete: boolean;
 
   soldAsIsPpsf: number | null;
   activeAsIsPpsf: number | null;
@@ -59,165 +90,223 @@ export type DealOutput = {
   soldArvValue: number | null;
   activeArvValue: number | null;
   combinedArvValue: number | null;
-  usedArv: number | null;
+  arvBeforeAdjustments: number | null;
 
-  rehabBase: number | null;
-  rehabDamage: number | null;
-  floodDiscount: number | null;
-  doubleYellowDiscount: number | null;
-  rehabTotal: number | null;
+  rehabCostPerSqft: number;
+  damageMultiplier: number;
+  rehabBaseCost: number;
+  rehabDamageCost: number;
+  rehabCalculatedCost: number;
+  rehabFinalCost: number;
 
-  netArv: number | null;
-  holdingMonthly: number | null;
-  holdingTotal: number | null;
+  floodDiscount: number;
+  doubleYellowDiscount: number;
+  totalArvAdjustments: number;
+  adjustedArv: number | null;
+
+  hoaMonthly: number;
+  insuranceMonthly: number;
+  holdingMonthly: number;
+  holdingTotal: number;
 
   retailCommission: number | null;
   retailClosingCosts: number | null;
   sellerRetailExpense: number | null;
+  mansionTaxPct: number;
   mansionTax: number | null;
   feesToRetail: number | null;
 
-  flipMao: number | null;
+  totalWalkawayCosts: number | null;
+  totalWalkawayCash: number | null;
   offerRanges: { pct: number; offer: number }[];
+
+  wholesaleRows: WholesaleRow[];
+
+  agedCompDays: {
+    asIsSold: Array<number | null>;
+    asIsActive: Array<number | null>;
+    arvSold: Array<number | null>;
+    arvActive: Array<number | null>;
+  };
 };
 
-function validNum(x: unknown): x is number {
-  return typeof x === "number" && Number.isFinite(x);
+function avgCompPpsf(comps: Comp[]): number | null {
+  const values = comps.map((c) => {
+    if (!isFiniteNumber(c.price) || !isFiniteNumber(c.sqft) || c.sqft <= 0) return null;
+    return safeDivide(c.price, c.sqft);
+  });
+  return averageIfNonZero(values);
 }
 
-function avg(nums: number[]): number | null {
+function avgValue(a: number | null, b: number | null): number | null {
+  const nums = [a, b].filter((n): n is number => isFiniteNumber(n) && n > 0);
   if (!nums.length) return null;
-  return nums.reduce((a, b) => a + b, 0) / nums.length;
+  return nums.reduce((sum, n) => sum + n, 0) / nums.length;
 }
 
-function ppsf(comps: Comp[]): number | null {
-  const vals: number[] = [];
-  for (const c of comps) {
-    if (validNum(c.price) && validNum(c.sqft) && c.sqft > 0) {
-      vals.push(c.price / c.sqft);
-    }
-  }
-  return avg(vals);
+function rehabTypeCostPerSqft(type: RehabType): number {
+  return xlookup(type, ["Partial Loss", "Total Loss", "New Construction"], [30, 131, 200], 30);
 }
 
-function rehabCostPerSqft(t: RehabType): number {
-  if (t === "Partial Loss") return 30;
-  if (t === "Total Loss") return 131;
-  return 200;
+function damageTypeMultiplier(type: DamageType): number {
+  return vlookup(
+    type,
+    [
+      { key: "Light", value: 0 },
+      { key: "Moderate", value: 0.1 },
+      { key: "Heavy", value: 0.25 },
+    ],
+    0
+  );
 }
 
-function damageMultiplier(d: DamageType): number {
-  if (d === "Light") return 0;
-  if (d === "Moderate") return 0.1;
-  return 0.25;
-}
-
-// Mansion tax tiers (formerly "luxury fee")
-function mansionTaxPct(netArv: number): number {
-  if (netArv <= 1_000_000) return 0;
-  if (netArv <= 2_000_000) return 0.01;
-  if (netArv <= 2_500_000) return 0.02;
-  if (netArv <= 3_000_000) return 0.025;
-  if (netArv <= 3_500_000) return 0.03;
+function mansionTaxPct(arv: number): number {
+  if (arv <= 1_000_000) return 0;
+  if (arv <= 2_000_000) return 0.01;
+  if (arv <= 2_500_000) return 0.02;
+  if (arv <= 3_000_000) return 0.025;
+  if (arv <= 3_500_000) return 0.03;
   return 0.035;
 }
 
-function combinedValue(a: number | null, b: number | null): number | null {
-  if (validNum(a) && validNum(b)) return (a + b) / 2;
-  if (validNum(a)) return a;
-  if (validNum(b)) return b;
-  return null;
+function makeWholesaleRows(params: {
+  arv: number;
+  purchasePrice: number;
+  rehabCost: number;
+  hardCosts: number;
+}): WholesaleRow[] {
+  const pctSteps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75];
+
+  const totalCost = params.purchasePrice + params.hardCosts;
+  const feeBase = params.arv - totalCost;
+
+  return pctSteps.map((pct) => {
+    const wholesaleFee = feeBase * pct;
+    const investorSellPrice = params.purchasePrice + wholesaleFee;
+    const allIn = totalCost + wholesaleFee;
+    const profit = params.arv - allIn;
+    const outOfPocket = params.purchasePrice + params.rehabCost + wholesaleFee;
+    const cashOnCash = outOfPocket > 0 ? profit / outOfPocket : 0;
+
+    return {
+      pct,
+      wholesaleFee,
+      investorSellPrice,
+      hardCosts: params.hardCosts,
+      totalCost,
+      allIn,
+      profit,
+      cashOnCash,
+      outOfPocket,
+    };
+  });
+}
+function toNumber(value: unknown, fallback = 0): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
-export function calcDeal(input: DealInput): DealOutput {
-  const marketAdj = validNum(input.marketAdjustmentPct) ? input.marketAdjustmentPct : 0.1;
-  const closingFeePct = validNum(input.closingFeePct) ? input.closingFeePct : 0.1;
-  const desiredProfit = validNum(input.desiredProfit) ? input.desiredProfit : 30000;
+export function calcDeal(input: DealInput, now = new Date()): DealOutput {
+  const soldAsIsPpsf = avgCompPpsf(input.asIsSold);
+  const activeAsIsPpsf = avgCompPpsf(input.asIsActive);
 
-  const months = validNum(input.monthsUntilSold) ? input.monthsUntilSold : 4;
-  const annualHOA = validNum(input.annualHOA) ? input.annualHOA : 0;
-  const annualIns = validNum(input.annualInsurance) ? input.annualInsurance : 0;
-  const annualTaxes = validNum(input.annualTaxes) ? input.annualTaxes : 0;
+  const soldAsIsValue = isFiniteNumber(soldAsIsPpsf) ? soldAsIsPpsf * input.subjectSqft : null;
+  const activeAsIsValue = isFiniteNumber(activeAsIsPpsf) ? activeAsIsPpsf * input.subjectSqft : null;
 
-  const retailCommPct = validNum(input.retailCommissionPct) ? input.retailCommissionPct : 0.06;
-  const retailClosePct = validNum(input.retailClosingCostsPct) ? input.retailClosingCostsPct : 0.035;
-  const sellerExpensePct = validNum(input.sellerRetailExpensePct) ? input.sellerRetailExpensePct : 0.07;
+  const combinedAsIsValue = avgValue(soldAsIsValue, activeAsIsValue);
+  const adjustedAsIsValue = isFiniteNumber(combinedAsIsValue)
+    ? combinedAsIsValue * (1 - toNumber(input.marketAdjustmentPct, 0.1))
+    : null;
 
-  const purchasePrice = validNum(input.purchasePrice) ? input.purchasePrice : null;
+  const maoNovation = isFiniteNumber(adjustedAsIsValue)
+    ? adjustedAsIsValue - adjustedAsIsValue * toNumber(input.novationClosingFeePct, 0.1) - toNumber(input.desiredProfit, 30000)
+    : null;
 
-  // AS-IS
-  const soldAsIsPpsf = ppsf(input.asIsSold);
-  const activeAsIsPpsf = ppsf(input.asIsActive);
+  const soldArvPpsf = avgCompPpsf(input.arvSold);
+  const activeArvPpsf = avgCompPpsf(input.arvActive);
 
-  const soldAsIsValue = validNum(soldAsIsPpsf) ? soldAsIsPpsf * input.subjectSqft : null;
-  const activeAsIsValue = validNum(activeAsIsPpsf) ? activeAsIsPpsf * input.subjectSqft : null;
+  const soldArvValue = isFiniteNumber(soldArvPpsf) ? soldArvPpsf * input.subjectSqft : null;
+  const activeArvValue = isFiniteNumber(activeArvPpsf) ? activeArvPpsf * input.subjectSqft : null;
+  const combinedArvValue = avgValue(soldArvValue, activeArvValue);
 
-  const combinedAsIsValue = combinedValue(soldAsIsValue, activeAsIsValue);
-  const adjustedAsIsValue = validNum(combinedAsIsValue) ? combinedAsIsValue * (1 - marketAdj) : null;
+  const arvBeforeAdjustments = isFiniteNumber(input.inputArvOverride) && input.inputArvOverride > 0
+    ? input.inputArvOverride
+    : combinedArvValue;
 
-  const maoNovation =
-    validNum(adjustedAsIsValue)
-      ? adjustedAsIsValue - adjustedAsIsValue * closingFeePct - desiredProfit
-      : null;
+  const rehabCostPerSqft = rehabTypeCostPerSqft(input.rehabType);
+  const damageMultiplier = damageTypeMultiplier(input.damageType);
+  const rehabBaseCost = Math.max(0, toNumber(input.subjectSqft)) * rehabCostPerSqft;
+  const rehabDamageCost = rehabBaseCost * damageMultiplier;
+  const rehabCalculatedCost = rehabBaseCost + rehabDamageCost;
+  const rehabFinalCost = IF(toNumber(input.rehabCustomAmount) > 0, toNumber(input.rehabCustomAmount), rehabCalculatedCost);
 
-  // ARV
-  const soldArvPpsf = ppsf(input.arvSold);
-  const activeArvPpsf = ppsf(input.arvActive);
+  const floodDiscount = isFiniteNumber(arvBeforeAdjustments) && input.floodZone
+    ? arvBeforeAdjustments * 0.15
+    : 0;
+  const doubleYellowDiscount = isFiniteNumber(arvBeforeAdjustments) && input.doubleYellow
+    ? arvBeforeAdjustments * 0.05
+    : 0;
 
-  const soldArvValue = validNum(soldArvPpsf) ? soldArvPpsf * input.subjectSqft : null;
-  const activeArvValue = validNum(activeArvPpsf) ? activeArvPpsf * input.subjectSqft : null;
+  const totalArvAdjustments = floodDiscount + doubleYellowDiscount;
+  const adjustedArv = isFiniteNumber(arvBeforeAdjustments) ? arvBeforeAdjustments - totalArvAdjustments : null;
 
-  const combinedArvValue = combinedValue(soldArvValue, activeArvValue);
+  const hoaMonthly = toNumber(input.annualHoa) / 12;
+  const insuranceMonthly = toNumber(input.annualInsurance) / 12;
+  const taxesMonthly = toNumber(input.annualTaxes) / 12;
+  const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + toNumber(input.monthlyMortgage) + toNumber(input.monthlyOtherHolding);
+  const holdingTotal = holdingMonthly * Math.max(0, toNumber(input.monthsUntilSold, 4));
 
-  const usedArv =
-    validNum(input.inputARV as number)
-      ? (input.inputARV as number)
-      : validNum(combinedArvValue)
-      ? combinedArvValue
-      : null;
-
-  // Rehab + discounts
-  const rehabBase = validNum(usedArv) ? input.subjectSqft * rehabCostPerSqft(input.rehabType) : null;
-  const rehabDamage = validNum(rehabBase) ? rehabBase * damageMultiplier(input.damageType) : null;
-
-  const floodDiscount = validNum(usedArv) && input.floodZone ? usedArv * 0.15 : 0;
-  const doubleYellowDiscount = validNum(usedArv) && input.doubleYellow ? usedArv * 0.05 : 0;
-
-  const rehabTotal =
-    validNum(rehabBase) && validNum(rehabDamage)
-      ? rehabBase + rehabDamage + floodDiscount + doubleYellowDiscount
-      : null;
-
-  const netArv = validNum(usedArv) && validNum(rehabTotal) ? usedArv - rehabTotal : null;
-
-  // Holding
-  const holdingMonthly = (annualHOA + annualIns + annualTaxes) / 12;
-  const holdingTotal = holdingMonthly * months;
-
-  // Retail fees
-  const retailCommission = validNum(netArv) ? netArv * retailCommPct : null;
-  const retailClosingCosts = validNum(netArv) ? netArv * retailClosePct : null;
-  const sellerRetailExpense = validNum(netArv) ? netArv * sellerExpensePct : null;
-  const mansionTax = validNum(netArv) ? netArv * mansionTaxPct(netArv) : null;
+  const retailCommission = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailCommissionPct, 0.06) : null;
+  const retailClosingCosts = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailClosingCostsPct, 0.035) : null;
+  const sellerRetailExpense = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.sellerRetailExpensePct, 0.07) : null;
+  const mansionTaxPctValue = isFiniteNumber(adjustedArv) ? mansionTaxPct(adjustedArv) : 0;
+  const mansionTax = isFiniteNumber(adjustedArv) ? adjustedArv * mansionTaxPctValue : null;
 
   const feesToRetail =
-    validNum(retailCommission) &&
-    validNum(retailClosingCosts) &&
-    validNum(sellerRetailExpense) &&
-    validNum(mansionTax) &&
-    validNum(netArv)
-      ? retailCommission + retailClosingCosts + sellerRetailExpense + mansionTax + holdingTotal
+    isFiniteNumber(retailCommission) &&
+    isFiniteNumber(retailClosingCosts) &&
+    isFiniteNumber(sellerRetailExpense) &&
+    isFiniteNumber(mansionTax)
+      ? retailCommission + retailClosingCosts + sellerRetailExpense + mansionTax
       : null;
 
-  const flipMao = validNum(netArv) && validNum(feesToRetail) ? netArv - feesToRetail : null;
+  const totalWalkawayCosts =
+    isFiniteNumber(feesToRetail) ? feesToRetail + holdingTotal + rehabFinalCost : null;
 
-  const pctSteps = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0];
-  const offerRanges = validNum(flipMao)
-    ? pctSteps.map((p) => ({ pct: p, offer: p * flipMao }))
+  const totalWalkawayCash =
+    isFiniteNumber(adjustedArv) && isFiniteNumber(totalWalkawayCosts)
+      ? adjustedArv - totalWalkawayCosts
+      : null;
+
+  const offerSteps = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0];
+  const offerRanges = isFiniteNumber(totalWalkawayCash)
+    ? offerSteps.map((pct) => ({ pct, offer: totalWalkawayCash * pct }))
     : [];
 
+  const wholesaleRows =
+    isFiniteNumber(adjustedArv)
+      ? makeWholesaleRows({
+          arv: adjustedArv,
+          purchasePrice: toNumber(input.purchasePrice),
+          rehabCost: rehabFinalCost,
+          hardCosts: rehabFinalCost + holdingTotal + (isFiniteNumber(feesToRetail) ? feesToRetail - (isFiniteNumber(sellerRetailExpense) ? sellerRetailExpense : 0) : 0),
+        })
+      : [];
+
+  const agedCompDays = {
+    asIsSold: input.asIsSold.map((c) => daysSince(c.date, now)),
+    asIsActive: input.asIsActive.map((c) => daysSince(c.date, now)),
+    arvSold: input.arvSold.map((c) => daysSince(c.date, now)),
+    arvActive: input.arvActive.map((c) => daysSince(c.date, now)),
+  };
+
+  const isComplete =
+    input.subjectSqft > 0 &&
+    (isFiniteNumber(arvBeforeAdjustments) || input.arvSold.some((c) => isFiniteNumber(c.price)) || input.arvActive.some((c) => isFiniteNumber(c.price))) &&
+    (isFiniteNumber(combinedAsIsValue) || input.asIsSold.some((c) => isFiniteNumber(c.price)) || input.asIsActive.some((c) => isFiniteNumber(c.price)));
+
   return {
-    purchasePrice,
+    isComplete,
 
     soldAsIsPpsf,
     activeAsIsPpsf,
@@ -232,25 +321,50 @@ export function calcDeal(input: DealInput): DealOutput {
     soldArvValue,
     activeArvValue,
     combinedArvValue,
-    usedArv,
+    arvBeforeAdjustments,
 
-    rehabBase,
-    rehabDamage,
+    rehabCostPerSqft,
+    damageMultiplier,
+    rehabBaseCost,
+    rehabDamageCost,
+    rehabCalculatedCost,
+    rehabFinalCost,
+
     floodDiscount,
     doubleYellowDiscount,
-    rehabTotal,
+    totalArvAdjustments,
+    adjustedArv,
 
-    netArv,
+    hoaMonthly,
+    insuranceMonthly,
     holdingMonthly,
     holdingTotal,
 
     retailCommission,
     retailClosingCosts,
     sellerRetailExpense,
+    mansionTaxPct: mansionTaxPctValue,
     mansionTax,
     feesToRetail,
 
-    flipMao,
+    totalWalkawayCosts,
+    totalWalkawayCash,
     offerRanges,
+
+    wholesaleRows,
+
+    agedCompDays,
   };
 }
+
+
+
+
+
+
+
+
+
+
+
+

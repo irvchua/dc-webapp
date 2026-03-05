@@ -1,88 +1,154 @@
 "use client";
 
-import type { DealInput, DamageType, RehabType } from "@/lib/dealCalc";
+import type { DealInput, DealOutput, DamageType, RehabType } from "@/lib/dealCalc";
 import { NumberInput } from "./NumberInput";
 import { CompTable } from "./CompTable";
 
-export function DealForm({ deal, onChange }: { deal: DealInput; onChange: (d: DealInput) => void }) {
+type Props = {
+  deal: DealInput;
+  out: DealOutput | null;
+  onChange: (d: DealInput) => void;
+};
+
+export function DealForm({ deal, out, onChange }: Props) {
   const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
 
-  return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 10 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>Deal / Property label</div>
-          <input
-            value={deal.propertyLabel}
-            onChange={(e) => set({ propertyLabel: e.target.value })}
-            style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10 }}
-          />
-        </label>
+  const emptyAges = [null, null, null, null, null] as Array<number | null>;
+  const pctForInput = (decimal: number) => Number((decimal * 100).toFixed(4));
 
-        <NumberInput label="Subject sqft" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
+
+  return (
+    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 10 }}>
+        <div style={{ fontWeight: 900 }}>Subject Property</div>
+
+
+        <div style={{ display: "grid", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>Deal Label</div>
+              <input
+                value={deal.propertyLabel}
+                onChange={(e) => set({ propertyLabel: e.target.value })}
+                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>Property Address</div>
+              <input
+                value={deal.propertyAddress}
+                onChange={(e) => set({ propertyAddress: e.target.value })}
+                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>Owner Name</div>
+              <input
+                value={deal.ownerName}
+                onChange={(e) => set({ ownerName: e.target.value })}
+                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+              />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <NumberInput label="SQFT" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
+            <NumberInput label="Lot Size" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
+
+            <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>Bed / Bath</div>
+              <input
+                value={deal.bedBath}
+                onChange={(e) => set({ bedBath: e.target.value })}
+                style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+              />
+            </label>
+          </div>
+        </div>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={!!deal.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
-            Flood zone (ARV discount)
+            <input type="checkbox" checked={deal.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
+            Flood Zone
           </label>
 
           <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={!!deal.doubleYellow}
-              onChange={(e) => set({ doubleYellow: e.target.checked })}
-            />
-            Double yellow (ARV discount)
+            <input type="checkbox" checked={deal.doubleYellow} onChange={(e) => set({ doubleYellow: e.target.checked })} />
+            Double Yellow
           </label>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <CompTable title="As-Is Sold Comps" comps={deal.asIsSold} onChange={(v) => set({ asIsSold: v })} />
-        <CompTable title="As-Is Active Comps" comps={deal.asIsActive} onChange={(v) => set({ asIsActive: v })} />
-      </div>
+      <CompTable
+        title="As-Is Sold Comps"
+        comps={deal.asIsSold}
+        agedDays={out?.agedCompDays.asIsSold ?? emptyAges}
+        onChange={(v) => set({ asIsSold: v })}
+      />
+      <CompTable
+        title="As-Is Active Comps"
+        comps={deal.asIsActive}
+        agedDays={out?.agedCompDays.asIsActive ?? emptyAges}
+        onChange={(v) => set({ asIsActive: v })}
+      />
 
       <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
         <div style={{ fontWeight: 900 }}>Novation Assumptions</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <NumberInput
-            label="Novation Market Adjustment %"
-            value={deal.marketAdjustmentPct ?? 0.1}
+            label="Market Adjustment %"
+            value={deal.marketAdjustmentPct}
             onChange={(v) => set({ marketAdjustmentPct: v ?? 0.1 })}
             step={0.01}
           />
           <NumberInput
             label="Novation Closing Fee %"
-            value={deal.closingFeePct ?? 0.1}
-            onChange={(v) => set({ closingFeePct: v ?? 0.1 })}
+            value={deal.novationClosingFeePct}
+            onChange={(v) => set({ novationClosingFeePct: v ?? 0.1 })}
             step={0.01}
           />
           <NumberInput
-            label="Desired Novation Profit"
-            value={deal.desiredProfit ?? 30000}
+            label="Desired Profit"
+            value={deal.desiredProfit}
             onChange={(v) => set({ desiredProfit: v ?? 30000 })}
             step={1000}
           />
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <CompTable title="ARV Sold Comps" comps={deal.arvSold} onChange={(v) => set({ arvSold: v })} />
-        <CompTable title="ARV Active Comps" comps={deal.arvActive} onChange={(v) => set({ arvActive: v })} />
-      </div>
+      <CompTable
+        title="ARV Sold Comps"
+        comps={deal.arvSold}
+        agedDays={out?.agedCompDays.arvSold ?? emptyAges}
+        onChange={(v) => set({ arvSold: v })}
+      />
+      <CompTable
+        title="ARV Active Comps"
+        comps={deal.arvActive}
+        agedDays={out?.agedCompDays.arvActive ?? emptyAges}
+        onChange={(v) => set({ arvActive: v })}
+      />
 
       <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 900 }}>Repairs & Holding</div>
+        <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Repair level</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="ARV Override"
+            value={deal.inputArvOverride}
+            onChange={(v) => set({ inputArvOverride: v })}
+            step={5000}
+          />
+
+          <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+            <div style={{ fontSize: 12, opacity: 0.75 }}>Rehab Type</div>
             <select
               value={deal.rehabType}
               onChange={(e) => set({ rehabType: e.target.value as RehabType })}
-              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10 }}
+              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
             >
               <option>Partial Loss</option>
               <option>Total Loss</option>
@@ -90,12 +156,12 @@ export function DealForm({ deal, onChange }: { deal: DealInput; onChange: (d: De
             </select>
           </label>
 
-          <label style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Damage / condition</div>
+          <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+            <div style={{ fontSize: 12, opacity: 0.75 }}>Damage Type</div>
             <select
               value={deal.damageType}
               onChange={(e) => set({ damageType: e.target.value as DamageType })}
-              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10 }}
+              style={{ padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10, width: "100%", minWidth: 0, boxSizing: "border-box" }}
             >
               <option>Light</option>
               <option>Moderate</option>
@@ -104,60 +170,85 @@ export function DealForm({ deal, onChange }: { deal: DealInput; onChange: (d: De
           </label>
 
           <NumberInput
-            label="ARV Override (optional)"
-            value={deal.inputARV ?? null}
-            onChange={(v) => set({ inputARV: v })}
-            step={5000}
-          />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
-          <NumberInput
-            label="Hold time (months)"
-            value={deal.monthsUntilSold ?? 4}
-            onChange={(v) => set({ monthsUntilSold: v ?? 4 })}
-            step={1}
-          />
-          <NumberInput label="Annual HOA" value={deal.annualHOA ?? 0} onChange={(v) => set({ annualHOA: v ?? 0 })} step={100} />
-          <NumberInput
-            label="Annual insurance"
-            value={deal.annualInsurance ?? 0}
-            onChange={(v) => set({ annualInsurance: v ?? 0 })}
-            step={100}
-          />
-          <NumberInput
-            label="Annual taxes"
-            value={deal.annualTaxes ?? 0}
-            onChange={(v) => set({ annualTaxes: v ?? 0 })}
-            step={100}
+            label="Custom Rehab Amount"
+            value={deal.rehabCustomAmount}
+            onChange={(v) => set({ rehabCustomAmount: v ?? 0 })}
+            step={1000}
           />
         </div>
       </div>
 
       <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 900 }}>Investor Selling Costs (for MAO)</div>
+        <div style={{ fontWeight: 900 }}>Holding Costs and Fees</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           <NumberInput
-            label="Agent commission %"
-            value={deal.retailCommissionPct ?? 0.06}
-            onChange={(v) => set({ retailCommissionPct: v ?? 0.06 })}
-            step={0.01}
+            label="Months Until Sold"
+            value={deal.monthsUntilSold}
+            onChange={(v) => set({ monthsUntilSold: v ?? 4 })}
+            step={1}
           />
           <NumberInput
-            label="Closing costs %"
-            value={deal.retailClosingCostsPct ?? 0.035}
-            onChange={(v) => set({ retailClosingCostsPct: v ?? 0.035 })}
-            step={0.001}
+            label="Annual HOA"
+            value={deal.annualHoa}
+            onChange={(v) => set({ annualHoa: v ?? 0 })}
+            step={100}
           />
           <NumberInput
-            label="Seller concessions / prep %"
-            value={deal.sellerRetailExpensePct ?? 0.07}
-            onChange={(v) => set({ sellerRetailExpensePct: v ?? 0.07 })}
-            step={0.01}
+            label="Annual Insurance"
+            value={deal.annualInsurance}
+            onChange={(v) => set({ annualInsurance: v ?? 0 })}
+            step={100}
+          />
+          <NumberInput
+            label="Annual Taxes"
+            value={deal.annualTaxes}
+            onChange={(v) => set({ annualTaxes: v ?? 0 })}
+            step={100}
+          />
+          <NumberInput
+            label="Monthly Mortgage"
+            value={deal.monthlyMortgage}
+            onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
+            step={50}
+          />
+          <NumberInput
+            label="Monthly Other Holding"
+            value={deal.monthlyOtherHolding}
+            onChange={(v) => set({ monthlyOtherHolding: v ?? 0 })}
+            step={50}
+          />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="Retail Commission (%)"
+            value={pctForInput(deal.retailCommissionPct)}
+            onChange={(v) => set({ retailCommissionPct: (v ?? 6) / 100 })}
+            step={0.1}
+          />
+          <NumberInput
+            label="Closing Costs (%)"
+            value={pctForInput(deal.retailClosingCostsPct)}
+            onChange={(v) => set({ retailClosingCostsPct: (v ?? 3.5) / 100 })}
+            step={0.1}
+          />
+          <NumberInput
+            label="Seller Retail Expense (%)"
+            value={pctForInput(deal.sellerRetailExpensePct)}
+            onChange={(v) => set({ sellerRetailExpensePct: (v ?? 7) / 100 })}
+            step={0.1}
           />
         </div>
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+

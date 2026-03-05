@@ -2,129 +2,153 @@
 
 import { useMemo, useState } from "react";
 import type { DealOutput } from "@/lib/dealCalc";
-import { buildWholesaleTable } from "@/lib/wholesaleTable";
 import { WholesaleTable } from "@/components/WholesaleTable";
-import { WholesaleSnapshotModal } from "@/components/WholesaleSnapshotModal";
 
 function money(n: number | null) {
-  if (n === null || !Number.isFinite(n)) return "—";
+  if (n === null || !Number.isFinite(n)) return "-";
   return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
+function pct(n: number | null) {
+  if (n === null || !Number.isFinite(n)) return "-";
+  return `${(n * 100).toFixed(2)}%`;
+}
+
 function num(n: number | null) {
-  if (n === null || !Number.isFinite(n)) return "—";
+  if (n === null || !Number.isFinite(n)) return "-";
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function isNum(n: number | null): n is number {
+  return n !== null && Number.isFinite(n);
+}
+
 export function DealOutputs({ out }: { out: DealOutput }) {
-  const [isWholesaleSnapshotOpen, setIsWholesaleSnapshotOpen] = useState(false);
+  const [selectedPct, setSelectedPct] = useState<number | null>(null);
 
-  const hardCosts =
-    (out.retailCommission ?? 0) +
-    (out.retailClosingCosts ?? 0) +
-    (out.sellerRetailExpense ?? 0) +
-    (out.mansionTax ?? 0) +
-    (out.holdingTotal ?? 0) +
-    (out.rehabTotal ?? 0);
+  const selectedOffer = useMemo(() => {
+    if (selectedPct === null) return null;
+    return out.offerRanges.find((r) => r.pct === selectedPct) ?? null;
+  }, [out.offerRanges, selectedPct]);
 
-  const wholesaleRows = buildWholesaleTable({
-    flipMao: out.flipMao,
-    arv: out.usedArv,
-    hardCosts,
-  });
+  const selectedDifference = useMemo(() => {
+    if (!selectedOffer || !isNum(out.totalWalkawayCash)) return null;
+    return out.totalWalkawayCash - selectedOffer.offer;
+  }, [out.totalWalkawayCash, selectedOffer]);
 
-  const wholesaleSnapshotRows = useMemo(
-    () => [
-      { label: "Investor Max Buy Price (Flip MAO)", value: money(out.flipMao), strong: true },
-      { label: "ARV", value: money(out.usedArv), strong: false },
-      { label: "Estimated Repairs + Adjustments", value: money(out.rehabTotal), strong: false },
-      { label: "Net ARV (ARV minus repairs)", value: money(out.netArv), strong: false },
-      { label: "Investor Selling + Holding + Mansion Tax", value: money(out.feesToRetail), strong: false },
-    ],
-    [out]
-  );
+  const buyerCostsExclSellerRetailExpense = useMemo(() => {
+    if (!isNum(out.feesToRetail) || !isNum(out.sellerRetailExpense)) return null;
+    return out.rehabFinalCost + out.holdingTotal + (out.feesToRetail - out.sellerRetailExpense);
+  }, [out.feesToRetail, out.sellerRetailExpense, out.rehabFinalCost, out.holdingTotal]);
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontWeight: 900 }}>Outputs</div>
-          <button
-            type="button"
-            onClick={() => setIsWholesaleSnapshotOpen(true)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: 999,
+              background: out.isComplete ? "#dcfce7" : "#fff7ed",
+              color: out.isComplete ? "#166534" : "#9a3412",
+              border: `1px solid ${out.isComplete ? "#86efac" : "#fdba74"}`,
+            }}
           >
-            View Wholesale Snapshot
-          </button>
-        </div>
-      </div>
-
-      <WholesaleSnapshotModal
-        isOpen={isWholesaleSnapshotOpen}
-        onClose={() => setIsWholesaleSnapshotOpen(false)}
-        rows={wholesaleSnapshotRows}
-      />
-
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-        <div style={{ fontWeight: 900 }}>Novation</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>Novation MAO</div>
-          <div style={{ textAlign: "right", fontWeight: 900 }}>{money(out.maoNovation)}</div>
-
-          <div>Adjusted As-Is Value</div>
-          <div style={{ textAlign: "right", fontWeight: 700 }}>{money(out.adjustedAsIsValue)}</div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-        <div style={{ fontWeight: 900 }}>As-Is Value (Comps)</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>Sold $/Sqft</div>
-          <div style={{ textAlign: "right" }}>{num(out.soldAsIsPpsf)}</div>
-
-          <div>Active $/Sqft</div>
-          <div style={{ textAlign: "right" }}>{num(out.activeAsIsPpsf)}</div>
-
-          <div>As-Is Value (combined)</div>
-          <div style={{ textAlign: "right" }}>{money(out.combinedAsIsValue)}</div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-        <div style={{ fontWeight: 900 }}>ARV (Comps)</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>ARV from comps (combined)</div>
-          <div style={{ textAlign: "right" }}>{money(out.combinedArvValue)}</div>
-
-          <div>Sold ARV $/Sqft</div>
-          <div style={{ textAlign: "right" }}>{num(out.soldArvPpsf)}</div>
-
-          <div>Active ARV $/Sqft</div>
-          <div style={{ textAlign: "right" }}>{num(out.activeArvPpsf)}</div>
-        </div>
-      </div>
-
-      <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
-        <div style={{ fontWeight: 900, marginBottom: 10 }}>Offer Range to Seller</div>
-
-        {out.offerRanges.length === 0 ? (
-          <div style={{ opacity: 0.7 }}>Enter sqft and ARV comps to see ranges.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 6 }}>
-            {out.offerRanges.map((r) => (
-              <div key={r.pct} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>{Math.round(r.pct * 100)}% of Investor Max Buy Price</div>
-                <div style={{ textAlign: "right", fontWeight: 800 }}>{money(r.offer)}</div>
-              </div>
-            ))}
+            {out.isComplete ? "Ready" : "Incomplete Inputs"}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* WHOLESALE TABLE */}
-      <WholesaleTable rows={wholesaleRows} />
+      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+        <div style={{ fontWeight: 900 }}>As-Is and Novation</div>
+        <MetricRow label="Sold As-Is $/Sqft" helper="Average of non-zero sold comp price/sqft values." value={num(out.soldAsIsPpsf)} />
+        <MetricRow label="Active As-Is $/Sqft" helper="Average of non-zero active comp price/sqft values." value={num(out.activeAsIsPpsf)} />
+        <MetricRow label="Adjusted As-Is Value" helper="Combined As-Is value x (1 - market adjustment %)." value={money(out.adjustedAsIsValue)} />
+        <MetricRow label="MAO (Novation)" helper="Adjusted As-Is - novation closing fee - desired profit." value={money(out.maoNovation)} strong />
+      </div>
+
+      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+        <div style={{ fontWeight: 900 }}>ARV and Rehab</div>
+        <MetricRow label="ARV Before Adjustments" helper="ARV override if provided, else combined ARV comps." value={money(out.arvBeforeAdjustments)} />
+        <MetricRow label="Rehab Final Cost" helper="Custom rehab if set, else rehab type cost + damage multiplier." value={money(out.rehabFinalCost)} />
+        <MetricRow label="Flood Discount" helper="ARV before adjustments x 15% when Flood Zone is checked." value={money(out.floodDiscount)} />
+        <MetricRow label="Double Yellow Discount" helper="ARV before adjustments x 5% when Double Yellow is checked." value={money(out.doubleYellowDiscount)} />
+        <MetricRow label="Adjusted ARV" helper="ARV before adjustments - (flood discount + double yellow discount)." value={money(out.adjustedArv)} strong />
+      </div>
+
+      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+        <div style={{ fontWeight: 900 }}>Holding and Fees</div>
+        <MetricRow label="Holding / Month" helper="HOA/12 + insurance/12 + taxes/12 + monthly mortgage + monthly other." value={money(out.holdingMonthly)} />
+        <MetricRow label="Holding Total" helper="Holding / Month x months until sold." value={money(out.holdingTotal)} />
+        <MetricRow label="Fees to Retail" helper="Retail commission + closing costs + seller retail expense + mansion tax." value={money(out.feesToRetail)} />
+        <MetricRow label="Mansion Tax %" helper="Tiered rate based on adjusted ARV." value={pct(out.mansionTaxPct)} />
+      </div>
+
+      <div style={{ display: "grid", gap: 8, padding: 14, border: "1px solid #eee", borderRadius: 14 }}>
+        <div style={{ fontWeight: 900 }}>Offer Planning</div>
+        <MetricRow
+          label="Buyer Costs (Excl. Seller Retail Expense)"
+          helper="Rehab final cost + holding total + (fees to retail - seller retail expense)."
+          value={money(buyerCostsExclSellerRetailExpense)}
+        />
+        <MetricRow
+          label="Buyer Costs (Incl. Seller Retail Expense)"
+          helper="Fees to retail + holding total + rehab final cost."
+          value={money(out.totalWalkawayCosts)}
+        />
+        <MetricRow
+          label="Projected Buyer Total Costs"
+          helper="Purchase price + buyer costs (excl. seller retail expense)."
+          value={money(out.wholesaleRows[0]?.totalCost ?? null)}
+        />
+        <MetricRow
+          label="Projected Buyer Remaining Cash"
+          helper="Adjusted ARV - buyer costs (incl. seller retail expense)."
+          value={money(out.totalWalkawayCash)}
+          strong
+        />
+
+        <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+          {out.offerRanges.map((r) => {
+            const isChecked = selectedPct === r.pct;
+            return (
+              <div key={r.pct} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <input type="checkbox" checked={isChecked} onChange={() => setSelectedPct((prev) => (prev === r.pct ? null : r.pct))} />
+                  <span>{`${Math.round(r.pct * 100)}% of Maximum Allowable Offer (MAO)`}</span>
+                </label>
+                <div style={{ textAlign: "right", fontWeight: 700 }}>{money(r.offer)}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <MetricRow
+          label={selectedOffer ? `Selected MAO Buffer (${Math.round(selectedOffer.pct * 100)}%)` : "Selected MAO Buffer"}
+          helper="Projected buyer remaining cash - selected percentage amount."
+          value={money(selectedDifference)}
+          strong
+        />
+      </div>
+
+      <WholesaleTable rows={out.wholesaleRows} />
     </div>
   );
 }
+
+function MetricRow({ label, helper, value, strong }: { label: string; helper?: string; value: string; strong?: boolean }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10 }}>
+      <div>
+        <div>{label}</div>
+        {helper ? <div style={{ fontSize: 11, opacity: 0.65 }}>{helper}</div> : null}
+      </div>
+      <div style={{ textAlign: "right", fontWeight: strong ? 900 : 700 }}>{value}</div>
+    </div>
+  );
+}
+
+

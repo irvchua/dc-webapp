@@ -1,6 +1,6 @@
 "use client";
 
-import type { WholesaleRow } from "@/lib/wholesaleTable";
+import type { WholesaleRow } from "@/lib/dealCalc";
 
 function money(n: number) {
   return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
@@ -9,14 +9,15 @@ function pct(n: number) {
   return (n * 100).toFixed(0) + "%";
 }
 function pct2(n: number) {
-  return (n * 100).toFixed(2) + "%";
+  const rounded = Math.round(n * 100);
+  return rounded.toFixed(0) + "%";
 }
 
 export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
   if (!rows.length) {
     return (
       <div style={{ padding: 14, border: "1px solid #eee", borderRadius: 14, opacity: 0.75 }}>
-        Enter ARV comps + sqft to generate wholesale ranges.
+        Enter comps and assumptions to generate wholesale ranges.
       </div>
     );
   }
@@ -26,15 +27,13 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
       <div style={{ fontWeight: 900, marginBottom: 10 }}>Wholesale Assignment Table</div>
 
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
           <thead>
             <tr>
               {[
                 "Wholesale %",
                 "Wholesale Fee",
                 "Investor Sell Price",
-                "Hard Costs",
-                "Total Cost",
                 "All In",
                 "Profit (ARV - All In)",
                 "Cash-on-Cash",
@@ -63,8 +62,6 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
                 <td style={{ padding: "8px 10px", fontWeight: 800 }}>{pct(r.pct)}</td>
                 <td style={{ padding: "8px 10px" }}>{money(r.wholesaleFee)}</td>
                 <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.investorSellPrice)}</td>
-                <td style={{ padding: "8px 10px" }}>{money(r.hardCosts)}</td>
-                <td style={{ padding: "8px 10px" }}>{money(r.totalCost)}</td>
                 <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.allIn)}</td>
                 <td style={{ padding: "8px 10px", fontWeight: 800 }}>{money(r.profit)}</td>
                 <td style={{ padding: "8px 10px" }}>{pct2(r.cashOnCash)}</td>
@@ -76,8 +73,10 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
       </div>
 
       <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-        Hard Costs include: commissions, closing costs, seller prep, holding costs, repairs, and Mansion Tax.
+        Wholesale Fee = (ARV - Projected Buyer Total Costs) x Wholesale %. All In = Projected Buyer Total Costs + Wholesale Fee.
       </div>
     </div>
   );
 }
+
+
