@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isFirebaseConfigured } from "@/lib/firebase";
@@ -32,9 +33,10 @@ export default function AuthControls() {
       <div className="auth-pill" title={email ?? uid}>
         {email ?? "Signed in"}
       </div>
+      <Link href="/account" className="auth-btn">Account</Link>
       <button
         type="button"
-        className="btn"
+        className="auth-btn auth-btn-signout"
         onClick={async () => {
           setIsBusy(true);
           try {
@@ -50,3 +52,4 @@ export default function AuthControls() {
     </div>
   );
 }
+
