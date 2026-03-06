@@ -116,6 +116,34 @@ button {
   height: 18px;
 }
 
+.auth-controls {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-pill {
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .shell {
   max-width: 1300px;
   margin: 0 auto;
@@ -369,6 +397,18 @@ button {
     font-size: 12px;
   }
 
+  .auth-controls {
+    top: 10px;
+    left: 10px;
+    max-width: calc(100vw - 120px);
+  }
+
+  .auth-pill {
+    max-width: 140px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
   .shell {
     padding: 72px 12px 24px;
     gap: 12px;
@@ -438,6 +478,7 @@ button {
     transition: none !important;
   }
 }
+
 
 
 
