@@ -4,18 +4,141 @@ import type { DealInput, DealOutput, DamageType, RehabType } from "@/lib/dealCal
 import { NumberInput } from "./NumberInput";
 import { CompTable } from "./CompTable";
 
-type Props = {
+type DealEditorProps = {
   deal: DealInput;
-  out: DealOutput | null;
   onChange: (d: DealInput) => void;
 };
 
-export function DealForm({ deal, out, onChange }: Props) {
+type Props = DealEditorProps & {
+  out: DealOutput | null;
+  showAssumptionSections?: boolean;
+};
+
+function pctForInput(decimal: number) {
+  return Number((decimal * 100).toFixed(4));
+}
+
+function autoMonthlyMortgagePlaceholder(purchasePrice: number) {
+  const assumed = (Math.max(0, purchasePrice) * 0.1) / 12;
+  return `Auto ${assumed.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
+}
+
+export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
+  const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
+
+  return (
+    <>
+      <div className="section-card card" style={{ gap: 12 }}>
+        <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="ARV Override"
+            value={deal.inputArvOverride}
+            onChange={(v) => set({ inputArvOverride: v })}
+            step={5000}
+          />
+
+          <label className="input-wrap">
+            <div className="label">Rehab Type</div>
+            <select className="field" value={deal.rehabType} onChange={(e) => set({ rehabType: e.target.value as RehabType })}>
+              <option>Partial Loss</option>
+              <option>Total Loss</option>
+              <option>New Construction</option>
+            </select>
+          </label>
+
+          <label className="input-wrap">
+            <div className="label">Damage Type</div>
+            <select className="field" value={deal.damageType} onChange={(e) => set({ damageType: e.target.value as DamageType })}>
+              <option>Light</option>
+              <option>Moderate</option>
+              <option>Heavy</option>
+            </select>
+          </label>
+
+          <NumberInput
+            label="Custom Rehab Amount"
+            value={deal.rehabCustomAmount}
+            onChange={(v) => set({ rehabCustomAmount: v ?? 0 })}
+            step={1000}
+          />
+        </div>
+      </div>
+
+      <div className="section-card card" style={{ gap: 12 }}>
+        <div style={{ fontWeight: 900 }}>Holding Costs and Fees</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="Months Until Sold"
+            value={deal.monthsUntilSold}
+            onChange={(v) => set({ monthsUntilSold: v ?? 4 })}
+            step={1}
+          />
+          <NumberInput
+            label="Annual HOA"
+            value={deal.annualHoa}
+            onChange={(v) => set({ annualHoa: v ?? 0 })}
+            step={100}
+          />
+          <NumberInput
+            label="Annual Insurance"
+            value={deal.annualInsurance}
+            onChange={(v) => set({ annualInsurance: v ?? 0 })}
+            step={100}
+          />
+          <NumberInput
+            label="Annual Taxes"
+            value={deal.annualTaxes}
+            onChange={(v) => set({ annualTaxes: v ?? 0 })}
+            step={100}
+          />
+          <NumberInput
+            label="Monthly Mortgage"
+            value={deal.monthlyMortgage}
+            onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
+            step={50}
+            placeholder={autoMonthlyMortgagePlaceholder(deal.purchasePrice)}
+            zeroAsEmpty
+          />
+          <NumberInput
+            label="Monthly Other Holding"
+            value={deal.monthlyOtherHolding}
+            onChange={(v) => set({ monthlyOtherHolding: v ?? 0 })}
+            step={50}
+          />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="Retail Commission (%)"
+            value={pctForInput(deal.retailCommissionPct)}
+            onChange={(v) => set({ retailCommissionPct: (v ?? 6) / 100 })}
+            step={0.1}
+          />
+          <NumberInput
+            label="Closing Costs (%)"
+            value={pctForInput(deal.retailClosingCostsPct)}
+            onChange={(v) => set({ retailClosingCostsPct: (v ?? 3.5) / 100 })}
+            step={0.1}
+          />
+          <NumberInput
+            label="Seller Retail Expense (%)"
+            value={pctForInput(deal.sellerRetailExpensePct)}
+            onChange={(v) => set({ sellerRetailExpensePct: (v ?? 7) / 100 })}
+            step={0.1}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function DealForm({ deal, out, onChange, showAssumptionSections = true }: Props) {
   const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
 
   const emptyAges = [null, null, null, null, null] as Array<number | null>;
-  const pctForInput = (decimal: number) => Number((decimal * 100).toFixed(4));
-  const autoMonthlyMortgagePlaceholder = `Auto ${(((Math.max(0, deal.purchasePrice) * 0.1) / 12)).toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
@@ -115,113 +238,7 @@ export function DealForm({ deal, out, onChange }: Props) {
         onChange={(v) => set({ arvActive: v })}
       />
 
-      <div className="section-card card" style={{ gap: 12 }}>
-        <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-          <NumberInput
-            label="ARV Override"
-            value={deal.inputArvOverride}
-            onChange={(v) => set({ inputArvOverride: v })}
-            step={5000}
-          />
-
-          <label className="input-wrap">
-            <div className="label">Rehab Type</div>
-            <select className="field" value={deal.rehabType} onChange={(e) => set({ rehabType: e.target.value as RehabType })}>
-              <option>Partial Loss</option>
-              <option>Total Loss</option>
-              <option>New Construction</option>
-            </select>
-          </label>
-
-          <label className="input-wrap">
-            <div className="label">Damage Type</div>
-            <select className="field" value={deal.damageType} onChange={(e) => set({ damageType: e.target.value as DamageType })}>
-              <option>Light</option>
-              <option>Moderate</option>
-              <option>Heavy</option>
-            </select>
-          </label>
-
-          <NumberInput
-            label="Custom Rehab Amount"
-            value={deal.rehabCustomAmount}
-            onChange={(v) => set({ rehabCustomAmount: v ?? 0 })}
-            step={1000}
-          />
-        </div>
-      </div>
-
-      <div className="section-card card" style={{ gap: 12 }}>
-        <div style={{ fontWeight: 900 }}>Holding Costs and Fees</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-          <NumberInput
-            label="Months Until Sold"
-            value={deal.monthsUntilSold}
-            onChange={(v) => set({ monthsUntilSold: v ?? 4 })}
-            step={1}
-          />
-          <NumberInput
-            label="Annual HOA"
-            value={deal.annualHoa}
-            onChange={(v) => set({ annualHoa: v ?? 0 })}
-            step={100}
-          />
-          <NumberInput
-            label="Annual Insurance"
-            value={deal.annualInsurance}
-            onChange={(v) => set({ annualInsurance: v ?? 0 })}
-            step={100}
-          />
-          <NumberInput
-            label="Annual Taxes"
-            value={deal.annualTaxes}
-            onChange={(v) => set({ annualTaxes: v ?? 0 })}
-            step={100}
-          />
-          <NumberInput
-            label="Monthly Mortgage"
-            value={deal.monthlyMortgage}
-            onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
-            step={50}
-            placeholder={autoMonthlyMortgagePlaceholder}
-            zeroAsEmpty
-          />
-          <NumberInput
-            label="Monthly Other Holding"
-            value={deal.monthlyOtherHolding}
-            onChange={(v) => set({ monthlyOtherHolding: v ?? 0 })}
-            step={50}
-          />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-          <NumberInput
-            label="Retail Commission (%)"
-            value={pctForInput(deal.retailCommissionPct)}
-            onChange={(v) => set({ retailCommissionPct: (v ?? 6) / 100 })}
-            step={0.1}
-          />
-          <NumberInput
-            label="Closing Costs (%)"
-            value={pctForInput(deal.retailClosingCostsPct)}
-            onChange={(v) => set({ retailClosingCostsPct: (v ?? 3.5) / 100 })}
-            step={0.1}
-          />
-          <NumberInput
-            label="Seller Retail Expense (%)"
-            value={pctForInput(deal.sellerRetailExpensePct)}
-            onChange={(v) => set({ sellerRetailExpensePct: (v ?? 7) / 100 })}
-            step={0.1}
-          />
-        </div>
-      </div>
+      {showAssumptionSections ? <DealAssumptionSections deal={deal} onChange={onChange} /> : null}
     </div>
   );
 }
-
-
-
-

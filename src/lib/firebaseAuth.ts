@@ -1,7 +1,9 @@
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   getAuth,
+  linkWithCredential,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -50,6 +52,26 @@ export async function signUpWithEmailPassword(email: string, password: string) {
 
   const result = await createUserWithEmailAndPassword(auth, email, password);
   return result.user;
+}
+
+export async function linkPasswordToCurrentUser(password: string, preferredEmail?: string) {
+  const auth = getFirebaseAuthOrNull();
+  if (!auth) return null;
+
+  const user = auth.currentUser;
+  if (!user) throw new Error("No signed-in user");
+
+  const email = preferredEmail?.trim() || user.email;
+  if (!email) throw new Error("No email for account");
+
+  const credential = EmailAuthProvider.credential(email, password);
+  const result = await linkWithCredential(user, credential);
+  return result.user;
+}
+
+export function userHasPasswordProvider(user: User | null) {
+  if (!user) return false;
+  return user.providerData.some((provider) => provider.providerId === "password");
 }
 
 export async function signOutFirebaseUser() {

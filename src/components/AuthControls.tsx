@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isFirebaseConfigured } from "@/lib/firebase";
@@ -32,21 +33,25 @@ export default function AuthControls() {
       <div className="auth-pill" title={email ?? uid}>
         {email ?? "Signed in"}
       </div>
-      <button
-        type="button"
-        className="btn"
-        onClick={async () => {
-          setIsBusy(true);
-          try {
-            await signOutFirebaseUser();
-          } finally {
-            setIsBusy(false);
-          }
-        }}
-        disabled={isBusy}
-      >
-        Sign Out
-      </button>
+
+      <div className="auth-actions">
+        <Link href="/account" className="auth-btn">Account</Link>
+        <button
+          type="button"
+          className="auth-btn auth-btn-signout"
+          onClick={async () => {
+            setIsBusy(true);
+            try {
+              await signOutFirebaseUser();
+            } finally {
+              setIsBusy(false);
+            }
+          }}
+          disabled={isBusy}
+        >
+          Sign Out
+        </button>
+      </div>
     </div>
   );
 }

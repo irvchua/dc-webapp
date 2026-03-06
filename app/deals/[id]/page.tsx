@@ -6,7 +6,7 @@ import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
 import { loadDeal, upsertDeal } from "@/lib/storage";
 import { subscribeToAuthChanges } from "@/lib/firebaseAuth";
-import { DealForm } from "@/components/DealForm";
+import { DealAssumptionSections, DealForm } from "@/components/DealForm";
 import { DealOutputs } from "@/components/DealOutputs";
 
 function formatSavedAt(value: string | null | undefined) {
@@ -160,9 +160,18 @@ export default function DealPage() {
             />
           </div>
 
+          <DealAssumptionSections
+            deal={deal}
+            onChange={(next) => {
+              setDeal(next);
+            }}
+          />
+
           {out && <DealOutputs out={out} />}
         </div>
       </div>
     </main>
   );
 }
+
+
