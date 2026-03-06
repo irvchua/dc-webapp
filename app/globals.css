@@ -712,3 +712,42 @@ button {
     gap: 5px;
   }
 }
+
+/* Mobile auth controls responsive override */
+.auth-controls {
+  width: fit-content;
+  max-width: 260px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-btn {
+  width: auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .auth-controls {
+    max-width: calc(100vw - 100px);
+    gap: 6px;
+  }
+
+  .auth-pill {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .auth-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+}
