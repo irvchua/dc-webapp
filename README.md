@@ -21,6 +21,10 @@ npm install
 
 1. Create a Firebase project.
 2. Enable **Authentication** and turn on **Google** provider.
+3. Enable **Email/Password** provider (for username/password sign in).
+4. Enable **Firestore Database**.
+5. Add your local and Vercel domains to Firebase Auth authorized domains.
+6. Create a Web App in Firebase and copy config values.
 3. Enable **Firestore Database**.
 4. Add your local and Vercel domains to Firebase Auth authorized domains.
 5. Create a Web App in Firebase and copy config values.
@@ -58,3 +62,4 @@ Open http://localhost:3000
 - `npm run build`
 - `npm run start`
 - `npm run lint`
+

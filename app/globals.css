@@ -484,3 +484,128 @@ button {
 
 
 
+
+
+
+.google-signin-btn {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 2px solid #7d8284;
+  background: #ffffff;
+  color: #202124;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.google-signin-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.google-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.google-signin-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1;
+}
+
+[data-theme="dark"] .google-signin-btn {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 2px solid #7d8284;
+  background: #ffffff;
+  color: #202124;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .google-signin-btn {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 2px solid #7d8284;
+  background: #ffffff;
+  color: #202124;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+  .google-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+}
+
+.google-signin-btn {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 2px solid #7d8284;
+  background: #ffffff;
+  color: #202124;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.google-signin-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .google-signin-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1;
+}
+}
+

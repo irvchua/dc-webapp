@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { calcDeal, type DealInput } from "@/lib/dealCalc";
 import { loadDeals, deleteDeal, upsertDeal } from "@/lib/storage";
 import { subscribeToAuthChanges } from "@/lib/firebaseAuth";
@@ -13,8 +14,10 @@ function money(n: number | null) {
 }
 
 export default function HomePageClient() {
+  const router = useRouter();
   const [deals, setDeals] = useState<DealInput[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const sorted = useMemo(() => deals.slice(), [deals]);
 
   useEffect(() => {
@@ -27,16 +30,39 @@ export default function HomePageClient() {
       setIsLoading(false);
     };
 
-    const unsubscribe = subscribeToAuthChanges(() => {
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      if (!isMounted) return;
+
+      if (!user) {
+        setIsAuthed(false);
+        setDeals([]);
+        setIsLoading(false);
+        router.replace("/login");
+        return;
+      }
+
+      setIsAuthed(true);
+      setIsLoading(true);
       hydrate();
     });
 
-    hydrate();
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [router]);
+
+  if (isAuthed === null || isLoading) {
+    return (
+      <main className="shell" style={{ maxWidth: 1200 }}>
+        <div className="card section-card">Loading dashboard...</div>
+      </main>
+    );
+  }
+
+  if (!isAuthed) {
+    return null;
+  }
 
   return (
     <main className="shell" style={{ maxWidth: 1200 }}>
@@ -59,7 +85,7 @@ export default function HomePageClient() {
         </button>
       </header>
 
-      {!isLoading && sorted.length === 0 ? (
+      {sorted.length === 0 ? (
         <div
           className="card"
           style={{
@@ -127,4 +153,3 @@ function Metric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

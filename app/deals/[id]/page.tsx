@@ -23,6 +23,8 @@ export default function DealPage() {
 
   const [deal, setDeal] = useState<DealInput | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const [isDealLoading, setIsDealLoading] = useState(true);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   const out = useMemo(() => (deal ? calcDeal(deal) : null), [deal]);
 
@@ -35,19 +37,29 @@ export default function DealPage() {
       const loaded = await loadDeal(id);
       if (!isMounted) return;
       setDeal(loaded);
+      setIsDealLoading(false);
     };
 
-    const unsubscribe = subscribeToAuthChanges(() => {
+    const unsubscribe = subscribeToAuthChanges((user) => {
+      if (!isMounted) return;
+
+      if (!user) {
+        setIsAuthed(false);
+        setIsDealLoading(false);
+        router.replace("/login");
+        return;
+      }
+
+      setIsAuthed(true);
+      setIsDealLoading(true);
       hydrate();
     });
-
-    hydrate();
 
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     const updateLayout = () => setStackColumns(window.innerWidth < 1360);
@@ -61,6 +73,18 @@ export default function DealPage() {
     const timer = window.setTimeout(() => setSaveState("idle"), 1800);
     return () => window.clearTimeout(timer);
   }, [saveState]);
+
+  if (isAuthed === null || isDealLoading) {
+    return (
+      <main className="shell" style={{ maxWidth: 1100 }}>
+        <div className="card section-card">Loading deal...</div>
+      </main>
+    );
+  }
+
+  if (!isAuthed) {
+    return null;
+  }
 
   if (!deal) {
     return (
@@ -142,4 +166,3 @@ export default function DealPage() {
     </main>
   );
 }
-

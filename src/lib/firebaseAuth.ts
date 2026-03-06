@@ -1,7 +1,9 @@
 import {
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   type User,
@@ -31,6 +33,22 @@ export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   const result = await signInWithPopup(auth, provider);
+  return result.user;
+}
+
+export async function signInWithEmailPassword(email: string, password: string) {
+  const auth = getFirebaseAuthOrNull();
+  if (!auth) return null;
+
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+}
+
+export async function signUpWithEmailPassword(email: string, password: string) {
+  const auth = getFirebaseAuthOrNull();
+  if (!auth) return null;
+
+  const result = await createUserWithEmailAndPassword(auth, email, password);
   return result.user;
 }
 
