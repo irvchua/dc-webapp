@@ -141,6 +141,7 @@ export default function DealPage() {
           onChange={(next) => {
             setDeal(next);
           }}
+          showAssumptionSections={false}
         />
 
         <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
