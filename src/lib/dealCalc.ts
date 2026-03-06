@@ -208,6 +208,10 @@ function toNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+export function autoMonthlyMortgage(purchasePrice: number): number {
+  return Math.max(0, toNumber(purchasePrice)) * 0.1 / 12;
+}
+
 export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const soldAsIsPpsf = avgCompPpsf(input.asIsSold);
   const activeAsIsPpsf = avgCompPpsf(input.asIsActive);
@@ -255,7 +259,9 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const hoaMonthly = toNumber(input.annualHoa) / 12;
   const insuranceMonthly = toNumber(input.annualInsurance) / 12;
   const taxesMonthly = toNumber(input.annualTaxes) / 12;
-  const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + toNumber(input.monthlyMortgage) + toNumber(input.monthlyOtherHolding);
+  const mortgageInput = toNumber(input.monthlyMortgage);
+  const monthlyMortgage = mortgageInput > 0 ? mortgageInput : autoMonthlyMortgage(input.purchasePrice);
+  const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + monthlyMortgage + toNumber(input.monthlyOtherHolding);
   const holdingTotal = holdingMonthly * Math.max(0, toNumber(input.monthsUntilSold, 4));
 
   const retailCommission = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailCommissionPct, 0.06) : null;
