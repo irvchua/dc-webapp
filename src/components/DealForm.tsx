@@ -4,116 +4,25 @@ import type { DealInput, DealOutput, DamageType, RehabType } from "@/lib/dealCal
 import { NumberInput } from "./NumberInput";
 import { CompTable } from "./CompTable";
 
-type Props = {
+type DealEditorProps = {
   deal: DealInput;
-  out: DealOutput | null;
   onChange: (d: DealInput) => void;
 };
 
-export function DealForm({ deal, out, onChange }: Props) {
+type Props = DealEditorProps & {
+  out: DealOutput | null;
+  showAssumptionSections?: boolean;
+};
+
+function pctForInput(decimal: number) {
+  return Number((decimal * 100).toFixed(4));
+}
+
+export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
   const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
 
-  const emptyAges = [null, null, null, null, null] as Array<number | null>;
-  const pctForInput = (decimal: number) => Number((decimal * 100).toFixed(4));
-
   return (
-    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-      <div className="section-card card">
-        <div style={{ fontWeight: 900 }}>Subject Property</div>
-
-        <div style={{ display: "grid", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-            <label className="input-wrap">
-              <div className="label">Deal Label</div>
-              <input className="field" value={deal.propertyLabel} onChange={(e) => set({ propertyLabel: e.target.value })} />
-            </label>
-
-            <label className="input-wrap">
-              <div className="label">Property Address</div>
-              <input className="field" value={deal.propertyAddress} onChange={(e) => set({ propertyAddress: e.target.value })} />
-            </label>
-
-            <label className="input-wrap">
-              <div className="label">Owner Name</div>
-              <input className="field" value={deal.ownerName} onChange={(e) => set({ ownerName: e.target.value })} />
-            </label>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-            <NumberInput label="SQFT" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
-            <NumberInput label="Lot Size (Sqft)" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
-
-            <label className="input-wrap">
-              <div className="label">Bed / Bath</div>
-              <input className="field" value={deal.bedBath} onChange={(e) => set({ bedBath: e.target.value })} />
-            </label>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={deal.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
-            Flood Zone
-          </label>
-
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={deal.doubleYellow} onChange={(e) => set({ doubleYellow: e.target.checked })} />
-            Double Yellow
-          </label>
-        </div>
-      </div>
-
-      <CompTable
-        title="As-Is Sold Comps"
-        comps={deal.asIsSold}
-        agedDays={out?.agedCompDays.asIsSold ?? emptyAges}
-        onChange={(v) => set({ asIsSold: v })}
-      />
-      <CompTable
-        title="As-Is Active Comps"
-        comps={deal.asIsActive}
-        agedDays={out?.agedCompDays.asIsActive ?? emptyAges}
-        onChange={(v) => set({ asIsActive: v })}
-      />
-
-      <div className="section-card card" style={{ gap: 12 }}>
-        <div style={{ fontWeight: 900 }}>Novation Assumptions</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-          <NumberInput
-            label="Market Adjustment %"
-            value={deal.marketAdjustmentPct}
-            onChange={(v) => set({ marketAdjustmentPct: v ?? 0.1 })}
-            step={0.01}
-          />
-          <NumberInput
-            label="Novation Closing Fee %"
-            value={deal.novationClosingFeePct}
-            onChange={(v) => set({ novationClosingFeePct: v ?? 0.1 })}
-            step={0.01}
-          />
-          <NumberInput
-            label="Desired Profit"
-            value={deal.desiredProfit}
-            onChange={(v) => set({ desiredProfit: v ?? 30000 })}
-            step={1000}
-          />
-        </div>
-      </div>
-
-      <CompTable
-        title="ARV Sold Comps"
-        comps={deal.arvSold}
-        agedDays={out?.agedCompDays.arvSold ?? emptyAges}
-        onChange={(v) => set({ arvSold: v })}
-      />
-      <CompTable
-        title="ARV Active Comps"
-        comps={deal.arvActive}
-        agedDays={out?.agedCompDays.arvActive ?? emptyAges}
-        onChange={(v) => set({ arvActive: v })}
-      />
-
+    <>
       <div className="section-card card" style={{ gap: 12 }}>
         <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
 
@@ -215,7 +124,114 @@ export function DealForm({ deal, out, onChange }: Props) {
           />
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
+export function DealForm({ deal, out, onChange, showAssumptionSections = true }: Props) {
+  const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
+
+  const emptyAges = [null, null, null, null, null] as Array<number | null>;
+
+  return (
+    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+      <div className="section-card card">
+        <div style={{ fontWeight: 900 }}>Subject Property</div>
+
+        <div style={{ display: "grid", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+            <label className="input-wrap">
+              <div className="label">Deal Label</div>
+              <input className="field" value={deal.propertyLabel} onChange={(e) => set({ propertyLabel: e.target.value })} />
+            </label>
+
+            <label className="input-wrap">
+              <div className="label">Property Address</div>
+              <input className="field" value={deal.propertyAddress} onChange={(e) => set({ propertyAddress: e.target.value })} />
+            </label>
+
+            <label className="input-wrap">
+              <div className="label">Owner Name</div>
+              <input className="field" value={deal.ownerName} onChange={(e) => set({ ownerName: e.target.value })} />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <NumberInput label="SQFT" value={deal.subjectSqft} onChange={(v) => set({ subjectSqft: v ?? 0 })} />
+            <NumberInput label="Lot Size (Sqft)" value={deal.lotSize} onChange={(v) => set({ lotSize: v })} />
+
+            <label className="input-wrap">
+              <div className="label">Bed / Bath</div>
+              <input className="field" value={deal.bedBath} onChange={(e) => set({ bedBath: e.target.value })} />
+            </label>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="checkbox" checked={deal.floodZone} onChange={(e) => set({ floodZone: e.target.checked })} />
+            Flood Zone
+          </label>
+
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="checkbox" checked={deal.doubleYellow} onChange={(e) => set({ doubleYellow: e.target.checked })} />
+            Double Yellow
+          </label>
+        </div>
+      </div>
+
+      <CompTable
+        title="As-Is Sold Comps"
+        comps={deal.asIsSold}
+        agedDays={out?.agedCompDays.asIsSold ?? emptyAges}
+        onChange={(v) => set({ asIsSold: v })}
+      />
+      <CompTable
+        title="As-Is Active Comps"
+        comps={deal.asIsActive}
+        agedDays={out?.agedCompDays.asIsActive ?? emptyAges}
+        onChange={(v) => set({ asIsActive: v })}
+      />
+
+      <div className="section-card card" style={{ gap: 12 }}>
+        <div style={{ fontWeight: 900 }}>Novation Assumptions</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="Market Adjustment %"
+            value={deal.marketAdjustmentPct}
+            onChange={(v) => set({ marketAdjustmentPct: v ?? 0.1 })}
+            step={0.01}
+          />
+          <NumberInput
+            label="Novation Closing Fee %"
+            value={deal.novationClosingFeePct}
+            onChange={(v) => set({ novationClosingFeePct: v ?? 0.1 })}
+            step={0.01}
+          />
+          <NumberInput
+            label="Desired Profit"
+            value={deal.desiredProfit}
+            onChange={(v) => set({ desiredProfit: v ?? 30000 })}
+            step={1000}
+          />
+        </div>
+      </div>
+
+      <CompTable
+        title="ARV Sold Comps"
+        comps={deal.arvSold}
+        agedDays={out?.agedCompDays.arvSold ?? emptyAges}
+        onChange={(v) => set({ arvSold: v })}
+      />
+      <CompTable
+        title="ARV Active Comps"
+        comps={deal.arvActive}
+        agedDays={out?.agedCompDays.arvActive ?? emptyAges}
+        onChange={(v) => set({ arvActive: v })}
+      />
+
+      {showAssumptionSections ? <DealAssumptionSections deal={deal} onChange={onChange} /> : null}
+    </div>
+  );
+}
