@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { FirebaseError } from "firebase/app";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
   signInWithEmailPassword,
@@ -19,6 +20,32 @@ function GoogleMark() {
       <path fill="#4285F4" d="M12 5.8c1.4 0 2.7.5 3.7 1.4l2.8-2.8C16.8 2.8 14.6 2 12 2 8.2 2 5 4.3 3.3 7.6L6.4 10c.8-2.4 3-4.2 5.6-4.2z" />
     </svg>
   );
+}
+
+function mapAuthError(error: unknown, mode: "signin" | "signup") {
+  const code = (error as FirebaseError | undefined)?.code;
+
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "That email is already in use. Try signing in instead.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/weak-password":
+      return "Password is too weak. Use at least 6 characters.";
+    case "auth/user-not-found":
+    case "auth/invalid-credential":
+      return "No account found with that email/password.";
+    case "auth/wrong-password":
+      return "Incorrect password. Please try again.";
+    case "auth/operation-not-allowed":
+      return "Email/password sign-in is not enabled in Firebase Auth.";
+    case "auth/popup-closed-by-user":
+      return "Sign-in popup was closed before completing.";
+    default:
+      return mode === "signin"
+        ? "Unable to sign in. Check email/password."
+        : "Unable to sign up. Check your email and password.";
+  }
 }
 
 export default function LoginPage() {
@@ -53,8 +80,8 @@ export default function LoginPage() {
       } else {
         await signUpWithEmailPassword(email.trim(), password);
       }
-    } catch {
-      setErrorMsg(mode === "signin" ? "Unable to sign in. Check email/password." : "Unable to sign up. Use a valid email and stronger password.");
+    } catch (error) {
+      setErrorMsg(mapAuthError(error, mode));
     } finally {
       setIsBusy(false);
     }
@@ -135,8 +162,8 @@ export default function LoginPage() {
                 setIsBusy(true);
                 try {
                   await signInWithGoogle();
-                } catch {
-                  setErrorMsg("Google sign-in failed. Try again.");
+                } catch (error) {
+                  setErrorMsg(mapAuthError(error, "signin"));
                 } finally {
                   setIsBusy(false);
                 }
