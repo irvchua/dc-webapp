@@ -1,5 +1,17 @@
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+} from "firebase/firestore";
 import { makeDefaultDeal } from "./DefaultDeal";
 import type { Comp, DealInput } from "./dealCalc";
+import { getFirestoreOrNull } from "./firebase";
+import { getCurrentUserId } from "./firebaseAuth";
 
 type StoredV2 = {
   version: 2;
@@ -105,19 +117,19 @@ function migrateLegacyDeal(rawValue: unknown): DealInput {
   };
 }
 
-function persist(deals: DealInput[]) {
+function persistLocal(deals: DealInput[]) {
   const payload: StoredV2 = { version: 2, deals };
   localStorage.setItem(KEY, JSON.stringify(payload));
 }
 
-export function loadDeals(): DealInput[] {
+function loadLocalDeals(): DealInput[] {
   if (typeof window === "undefined") return [];
 
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as StoredV2;
-      if (parsed?.version === 2 && Array.isArray(parsed.deals)) return parsed.deals;
+      if (parsed?.version === 2 && Array.isArray(parsed.deals)) return parsed.deals.map(migrateLegacyDeal);
     }
 
     for (const legacyKey of LEGACY_KEYS) {
@@ -135,7 +147,7 @@ export function loadDeals(): DealInput[] {
       if (!legacyDeals) continue;
 
       const migrated = legacyDeals.map(migrateLegacyDeal);
-      persist(migrated);
+      persistLocal(migrated);
       return migrated;
     }
 
@@ -145,23 +157,110 @@ export function loadDeals(): DealInput[] {
   }
 }
 
-export function saveDeals(deals: DealInput[]) {
+function upsertLocalDeal(deal: DealInput) {
+  const localDeals = loadLocalDeals();
+  const idx = localDeals.findIndex((d) => d.id === deal.id);
+  if (idx >= 0) localDeals[idx] = deal;
+  else localDeals.unshift(deal);
+  persistLocal(localDeals);
+}
+
+function userDealsCollection(uid: string) {
+  const db = getFirestoreOrNull();
+  if (!db) return null;
+  return collection(db, "users", uid, "deals");
+}
+
+export async function loadDeals(): Promise<DealInput[]> {
+  if (typeof window === "undefined") return [];
+
+  const uid = await getCurrentUserId();
+  if (!uid) return loadLocalDeals();
+
+  const dealsRef = userDealsCollection(uid);
+  if (!dealsRef) return loadLocalDeals();
+
+  try {
+    const snapshot = await getDocs(query(dealsRef, orderBy("lastSavedAt", "desc")));
+    return snapshot.docs.map((d) => migrateLegacyDeal({ ...d.data(), id: d.id }));
+  } catch {
+    return loadLocalDeals();
+  }
+}
+
+export async function loadDeal(id: string): Promise<DealInput | null> {
+  if (typeof window === "undefined") return null;
+
+  const uid = await getCurrentUserId();
+  if (!uid) {
+    const local = loadLocalDeals();
+    return local.find((d) => d.id === id) ?? null;
+  }
+
+  const dealsRef = userDealsCollection(uid);
+  if (!dealsRef) {
+    const local = loadLocalDeals();
+    return local.find((d) => d.id === id) ?? null;
+  }
+
+  try {
+    const snap = await getDoc(doc(dealsRef, id));
+    if (!snap.exists()) return null;
+    return migrateLegacyDeal({ ...snap.data(), id: snap.id });
+  } catch {
+    const local = loadLocalDeals();
+    return local.find((d) => d.id === id) ?? null;
+  }
+}
+
+export async function saveDeals(deals: DealInput[]) {
   if (typeof window === "undefined") return;
-  persist(deals);
+  persistLocal(deals);
+
+  const uid = await getCurrentUserId();
+  if (!uid) return;
+
+  const dealsRef = userDealsCollection(uid);
+  if (!dealsRef) return;
+
+  await Promise.all(deals.map((deal) => setDoc(doc(dealsRef, deal.id), deal, { merge: true })));
 }
 
-export function upsertDeal(deal: DealInput) {
-  const deals = loadDeals();
-  const idx = deals.findIndex((d) => d.id === deal.id);
-  if (idx >= 0) deals[idx] = deal;
-  else deals.unshift(deal);
-  saveDeals(deals);
+export async function upsertDeal(deal: DealInput): Promise<DealInput> {
+  if (typeof window === "undefined") return deal;
+
+  const savedDeal = { ...deal, lastSavedAt: new Date().toISOString() };
+  upsertLocalDeal(savedDeal);
+
+  const uid = await getCurrentUserId();
+  if (!uid) return savedDeal;
+
+  const dealsRef = userDealsCollection(uid);
+  if (!dealsRef) return savedDeal;
+
+  try {
+    await setDoc(doc(dealsRef, savedDeal.id), savedDeal, { merge: true });
+    return savedDeal;
+  } catch {
+    return savedDeal;
+  }
 }
 
-export function deleteDeal(id: string) {
-  const deals = loadDeals().filter((d) => d.id !== id);
-  saveDeals(deals);
+export async function deleteDeal(id: string) {
+  if (typeof window === "undefined") return;
+
+  const localDeals = loadLocalDeals().filter((d) => d.id !== id);
+  persistLocal(localDeals);
+
+  const uid = await getCurrentUserId();
+  if (!uid) return;
+
+  const dealsRef = userDealsCollection(uid);
+  if (!dealsRef) return;
+
+  try {
+    await deleteDoc(doc(dealsRef, id));
+  } catch {
+    return;
+  }
 }
-
-
-

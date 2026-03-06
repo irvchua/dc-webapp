@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
-import { loadDeals, upsertDeal } from "@/lib/storage";
+import { loadDeal, upsertDeal } from "@/lib/storage";
+import { subscribeToAuthChanges } from "@/lib/firebaseAuth";
 import { DealForm } from "@/components/DealForm";
 import { DealOutputs } from "@/components/DealOutputs";
 
@@ -20,15 +21,33 @@ export default function DealPage() {
   const id = (params?.id as string) ?? "";
   const router = useRouter();
 
-  const [deal, setDeal] = useState<DealInput | null>(() => {
-    const deals = loadDeals();
-    return deals.find((d) => d.id === id) ?? null;
-  });
+  const [deal, setDeal] = useState<DealInput | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
 
   const out = useMemo(() => (deal ? calcDeal(deal) : null), [deal]);
 
   const [stackColumns, setStackColumns] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrate = async () => {
+      const loaded = await loadDeal(id);
+      if (!isMounted) return;
+      setDeal(loaded);
+    };
+
+    const unsubscribe = subscribeToAuthChanges(() => {
+      hydrate();
+    });
+
+    hydrate();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [id]);
 
   useEffect(() => {
     const updateLayout = () => setStackColumns(window.innerWidth < 1360);
@@ -67,11 +86,11 @@ export default function DealPage() {
 
         <div style={{ display: "grid", justifyItems: "end", gap: 6 }}>
           <button
-            onClick={() => {
+            onClick={async () => {
               const nowIso = new Date().toISOString();
               const nextDeal = { ...deal, lastSavedAt: nowIso };
-              upsertDeal(nextDeal);
-              setDeal(nextDeal);
+              const saved = await upsertDeal(nextDeal);
+              setDeal(saved);
               setSaveState("saved");
             }}
             className="btn btn-primary"
@@ -123,3 +142,4 @@ export default function DealPage() {
     </main>
   );
 }
+

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calcDeal, type DealInput } from "@/lib/dealCalc";
-import { loadDeals, saveDeals, deleteDeal } from "@/lib/storage";
+import { loadDeals, deleteDeal, upsertDeal } from "@/lib/storage";
+import { subscribeToAuthChanges } from "@/lib/firebaseAuth";
 import { makeDefaultDeal } from "@/lib/DefaultDeal";
 
 function money(n: number | null) {
@@ -12,8 +13,30 @@ function money(n: number | null) {
 }
 
 export default function HomePageClient() {
-  const [deals, setDeals] = useState<DealInput[]>(() => loadDeals());
+  const [deals, setDeals] = useState<DealInput[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const sorted = useMemo(() => deals.slice(), [deals]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrate = async () => {
+      const loaded = await loadDeals();
+      if (!isMounted) return;
+      setDeals(loaded);
+      setIsLoading(false);
+    };
+
+    const unsubscribe = subscribeToAuthChanges(() => {
+      hydrate();
+    });
+
+    hydrate();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <main className="shell" style={{ maxWidth: 1200 }}>
@@ -24,11 +47,10 @@ export default function HomePageClient() {
         </div>
 
         <button
-          onClick={() => {
+          onClick={async () => {
             const next = makeDefaultDeal();
-            const updated = [next, ...deals];
-            setDeals(updated);
-            saveDeals(updated);
+            const saved = await upsertDeal(next);
+            setDeals((prev) => [saved, ...prev.filter((d) => d.id !== saved.id)]);
           }}
           className="btn btn-primary"
           style={{ padding: "11px 16px" }}
@@ -37,7 +59,7 @@ export default function HomePageClient() {
         </button>
       </header>
 
-      {sorted.length === 0 ? (
+      {!isLoading && sorted.length === 0 ? (
         <div
           className="card"
           style={{
@@ -79,10 +101,9 @@ export default function HomePageClient() {
                   </Link>
 
                   <button
-                    onClick={() => {
-                      deleteDeal(d.id);
-                      const updated = loadDeals();
-                      setDeals(updated);
+                    onClick={async () => {
+                      await deleteDeal(d.id);
+                      setDeals((prev) => prev.filter((deal) => deal.id !== d.id));
                     }}
                     className="btn btn-danger"
                   >
@@ -106,5 +127,4 @@ function Metric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
 
