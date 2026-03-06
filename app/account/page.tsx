@@ -18,7 +18,7 @@ function mapLinkError(error: unknown) {
     case "auth/credential-already-in-use":
       return "That email/password is already linked to another account.";
     case "auth/requires-recent-login":
-      return "For security, sign in again with Google and retry.";
+      return "Please sign in again with Google and retry.";
     case "auth/weak-password":
       return "Password is too weak. Use at least 6 characters.";
     case "auth/invalid-email":
@@ -96,13 +96,7 @@ export default function AccountPage() {
           <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
             <label className="input-wrap">
               <div className="label">Email</div>
-              <input
-                className="field"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <input className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </label>
 
             <label className="input-wrap">
@@ -132,4 +126,3 @@ export default function AccountPage() {
     </main>
   );
 }
-

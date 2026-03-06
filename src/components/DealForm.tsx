@@ -18,6 +18,11 @@ function pctForInput(decimal: number) {
   return Number((decimal * 100).toFixed(4));
 }
 
+function autoMonthlyMortgagePlaceholder(purchasePrice: number) {
+  const assumed = (Math.max(0, purchasePrice) * 0.1) / 12;
+  return `Auto ${assumed.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
+}
+
 export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
   const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
 
@@ -94,6 +99,8 @@ export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
             value={deal.monthlyMortgage}
             onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
             step={50}
+            placeholder={autoMonthlyMortgagePlaceholder(deal.purchasePrice)}
+            zeroAsEmpty
           />
           <NumberInput
             label="Monthly Other Holding"

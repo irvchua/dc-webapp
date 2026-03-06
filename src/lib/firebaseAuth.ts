@@ -62,7 +62,7 @@ export async function linkPasswordToCurrentUser(password: string, preferredEmail
   if (!user) throw new Error("No signed-in user");
 
   const email = preferredEmail?.trim() || user.email;
-  if (!email) throw new Error("No email found for user");
+  if (!email) throw new Error("No email for account");
 
   const credential = EmailAuthProvider.credential(email, password);
   const result = await linkWithCredential(user, credential);
