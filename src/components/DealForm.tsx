@@ -1,6 +1,7 @@
 "use client";
 
 import type { DealInput, DealOutput, DamageType, RehabType } from "@/lib/dealCalc";
+import { autoMonthlyMortgage } from "@/lib/dealCalc";
 import { NumberInput } from "./NumberInput";
 import { CompTable } from "./CompTable";
 
@@ -19,7 +20,7 @@ function pctForInput(decimal: number) {
 }
 
 function autoMonthlyMortgagePlaceholder(purchasePrice: number) {
-  const assumed = (Math.max(0, purchasePrice) * 0.1) / 12;
+  const assumed = autoMonthlyMortgage(purchasePrice);
   return `Auto ${assumed.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 }
 
