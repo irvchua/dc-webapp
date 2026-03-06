@@ -15,6 +15,7 @@ export function DealForm({ deal, out, onChange }: Props) {
 
   const emptyAges = [null, null, null, null, null] as Array<number | null>;
   const pctForInput = (decimal: number) => Number((decimal * 100).toFixed(4));
+  const autoMonthlyMortgagePlaceholder = `Auto ${(((Math.max(0, deal.purchasePrice) * 0.1) / 12)).toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
@@ -185,6 +186,8 @@ export function DealForm({ deal, out, onChange }: Props) {
             value={deal.monthlyMortgage}
             onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
             step={50}
+            placeholder={autoMonthlyMortgagePlaceholder}
+            zeroAsEmpty
           />
           <NumberInput
             label="Monthly Other Holding"
@@ -218,4 +221,7 @@ export function DealForm({ deal, out, onChange }: Props) {
     </div>
   );
 }
+
+
+
 
