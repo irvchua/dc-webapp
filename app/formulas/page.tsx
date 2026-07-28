@@ -51,6 +51,12 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
         expression: "Whole days between the comp date and today",
         note: "Future dates display as 0 days old.",
       },
+      {
+        name: "Comp confidence",
+        expression: "Count of valid, flood-matched comps used ÷ 5 slots, plus their average age in days",
+        note: "Shown under each $/sqft figure. Highlighted when only 0-1 comps are used, or the average age exceeds 180 days.",
+        why: "A value built on one six-month-old comp and a value built on five recent ones can produce the exact same number, but they don't deserve the same trust. Surfacing the count and age is a reminder to sanity-check thin or stale comp sets before relying on the resulting offer.",
+      },
     ],
   },
   {
@@ -136,9 +142,20 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
         note: "This is used when no custom rehab amount is entered.",
       },
       {
-        name: "Final rehab cost",
+        name: "Rehab before contingency",
         expression: "Custom rehab amount, if greater than zero; otherwise calculated rehab cost",
         note: "A positive custom amount replaces the calculated result.",
+      },
+      {
+        name: "Rehab contingency",
+        expression: "Rehab before contingency × Rehab Contingency %",
+        note: "Defaults to 10%.",
+        why: "Rehab budgets running over estimate is one of the most common ways a flip actually loses money, whether the estimate came from the calculator's $/sqft formula or a number you typed in yourself. A contingency buffer on top of either one accounts for that instead of assuming the first estimate is exact.",
+      },
+      {
+        name: "Final rehab cost",
+        expression: "Rehab before contingency + Rehab contingency",
+        note: "This is the number used everywhere else in the calculator — holding costs, wholesale hard costs, and offer planning.",
       },
     ],
   },
@@ -148,10 +165,37 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
     intro: "Annual expenses are converted to monthly values before they are added to the holding total.",
     formulas: [
       {
+        name: "LTV and financing coverage",
+        expression: "LTV = loan amount ÷ property value",
+        note: "Investors and lenders use LTV before acquisition to size the loan, estimate required equity, and evaluate leverage risk.",
+        why: "The calculator's Purchase Price Financed percentage is a simplified acquisition-financing assumption. Rehab Budget Financed is technically closer to loan-to-cost because it measures the financed share of a budget rather than property value.",
+      },
+      {
+        name: "Loan amount",
+        expression: "(Purchase price × Purchase Price Financed %) + (Rehab final cost × Rehab Budget Financed %)",
+        note: "Purchase financing defaults to 90% and rehab financing defaults to 100%. Set either to 0% to model that portion as unfinanced.",
+        why: "Hard-money and private financing on a flip usually covers both the purchase and the rehab, drawn as work completes — not just the purchase price. Modeling both pieces separately lets the loan amount reflect what's actually financed instead of a single flat guess.",
+      },
+      {
+        name: "Financing points",
+        expression: "Loan amount × Points %",
+        note: "A one-time cost paid at closing (defaults to 2 points), included in Total Acquisition Costs below — not a monthly holding cost.",
+      },
+      {
         name: "Monthly mortgage default",
-        expression: "Purchase price × 10% ÷ 12",
-        note: "Used only when the Monthly Mortgage field is left blank. Entering 0 explicitly means an intentional all-cash deal and is used as-is, not replaced.",
-        why: "Blank and zero mean different things to a real buyer — blank means \"I haven't figured out financing yet, estimate it for me,\" while zero means \"I'm paying cash, there is no mortgage payment.\" Treating both the same would silently inflate holding costs on every genuinely all-cash deal.",
+        expression: "Loan amount × Interest Rate % ÷ 12 (interest-only)",
+        note: "Used only when Monthly Mortgage is blank. Entering 0 activates all-cash mode: purchase/rehab financing, loan amount, interest, and points all become zero.",
+        why: "Blank means \"estimate financing for me,\" while zero means \"there is no loan.\" All-cash mode must suppress the entire financing model—not just the monthly payment—or fictitious points would reduce the deal's projected returns.",
+      },
+      {
+        name: "Acquisition closing costs",
+        expression: "Purchase price × Acquisition Closing Cost %",
+        note: "Defaults to 2%. Title, attorney, recording, transfer tax, and similar entry-side costs — separate from the retail exit costs below, which apply when the finished property is resold.",
+      },
+      {
+        name: "Total acquisition costs",
+        expression: "Financing points + Acquisition closing costs",
+        note: "One-time cash paid at purchase. Included in Total Walkaway Costs, the wholesale table's hard costs, and Out of Pocket.",
       },
       {
         name: "Monthly holding cost",
@@ -174,9 +218,9 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
         note: "Uses the percentage entered in the deal assumptions.",
       },
       {
-        name: "Seller retail expense",
-        expression: "Adjusted ARV × seller retail expense %",
-        note: "Included in walkaway costs, but excluded from projected buyer hard costs.",
+        name: "End-investor retail resale allowance",
+        expression: "Adjusted ARV × end-investor retail resale allowance %",
+        note: "Applies later, when the end investor becomes the seller and resells the finished property to a retail buyer. It is not a payment to the original homeowner.",
       },
       {
         name: "Fees to retail",
@@ -191,14 +235,19 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
     intro: "These figures estimate the cash remaining after the modeled project costs, for a rehab-and-resell exit. A negative value means the deal loses money before any purchase price is even applied — it is shown in red.",
     formulas: [
       {
-        name: "Buyer costs (including seller retail expense)",
-        expression: "Fees to retail + total holding cost + final rehab cost",
-        note: "Shown as total walkaway costs.",
+        name: "End investor project costs (wholesale basis)",
+        expression: "Final rehab + holding + total acquisition costs + retail commission + closing costs + mansion tax",
+        note: "Costs belonging to the end investor who buys the assigned deal from you. Excludes the separate retail-resale allowance.",
+      },
+      {
+        name: "End investor all-in project costs (offer basis)",
+        expression: "End investor project costs + end-investor retail resale allowance",
+        note: "The conservative total used to determine how much room remains for your offer to the original homeowner.",
       },
       {
         name: "Projected buyer remaining cash",
-        expression: "Adjusted ARV − buyer costs including seller retail expense",
-        note: "Also labeled Walkaway Cash on the dashboard.",
+        expression: "Adjusted ARV − all modeled project costs (offer basis)",
+        note: "The same figure appears under three names depending on where you're looking: \"Projected Buyer Remaining Cash\" here and in the Cash Offer % selector, \"Cash Available for Homeowner Offer\" in the Offer Planning card, and \"Walkaway Cash\" on the dashboard.",
       },
       {
         name: "ARV-based offer amount",
@@ -211,16 +260,57 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
         expression: "Projected buyer remaining cash − selected ARV-based offer amount",
         note: "The amount left between the maximum modeled cash and the selected offer percentage.",
       },
+      {
+        name: "Recommended deal type",
+        expression: "Higher of Novation offer or the currently selected cash-offer percentage",
+        note: "The selected Deal Type remains your choice. The recommendation only compares modeled seller-offer amounts.",
+        why: "This gives you a consistent starting point without hiding the tradeoff. A higher modeled offer can improve seller acceptance, but transaction complexity, timeline, condition, title, and market risk still require human review.",
+      },
+    ],
+  },
+  {
+    id: "comparison",
+    title: "Novation offer vs. cash offer",
+    intro: "A dedicated side-by-side card (\"Novation Offer vs. Cash Offer\") answers \"what's the novation offer vs. the cash offer, and what would I resell it for?\" in one place, independent of whatever is currently typed into the Purchase Price field.",
+    formulas: [
+      {
+        name: "Novation Offer (to Seller)",
+        expression: "Same as MAO — Novation (As-Is Exit)",
+        note: "As-is, no-rehab exit price offered to the seller.",
+      },
+      {
+        name: "Cash Offer (to Seller)",
+        expression: "Projected buyer remaining cash × selected Cash Offer %",
+        note: "Defaults to 70%, the classic rehab-exit MAO starting point. Selectable from the same 60–100% steps as the ARV-based offer range.",
+        why: "This is the rehab-and-resell counterpart to the Novation offer — same underlying number as the ARV-based offer above, just surfaced next to the Novation figure so the two exit strategies can be compared directly instead of hunting through separate cards.",
+      },
+      {
+        name: "Cash Price to Investor",
+        expression: "Cash Offer (to Seller) + wholesale fee, where wholesale fee = (Adjusted ARV − Cash Offer − buyer hard costs) × selected Wholesale Split %",
+        note: "Defaults to a 50% split. Recomputed live from the Cash Offer above — it does not require clicking \"Use as Purchase Price\" first.",
+        why: "This is the price the wholesaler would need to charge an end investor to assign the contract at the chosen split, given whichever Cash Offer is currently selected. Computing it directly (rather than only through the Wholesale Assignment Table, which reads the Purchase Price field) means the comparison stays correct even if Purchase Price hasn't been updated yet.",
+      },
+      {
+        name: "Investor's Projected Profit",
+        expression: "Adjusted ARV − (Cash Offer + buyer hard costs + wholesale fee)",
+        note: "What the end buyer nets after rehab, holding, and retail exit costs, at the selected Wholesale Split %. Same formula as the wholesale table's Profit column.",
+      },
+      {
+        name: "Investor's Annualized Return",
+        expression: "Cash-on-cash × (12 ÷ months until sold, floored at 1 month)",
+        note: "Scales the total-hold-period return to a 12-month basis.",
+        why: "A 4-month deal and a 14-month deal with the same total cash-on-cash percentage are not equally good — the 4-month deal ties up capital for roughly a third as long. Without annualizing, deals with different hold periods can't be fairly compared side by side.",
+      },
     ],
   },
   {
     id: "wholesale",
     title: "Wholesale assignment table",
-    intro: "Each row tests a wholesale percentage from 10% through 75% against the same deal assumptions. Purchase Price here is whatever value is currently in the Purchase Price field — it is not automatically synced to either MAO number above, so double-check it against them.",
+    intro: "Each row tests a wholesale percentage from 0% through 75% against the same deal assumptions. Purchase Price here is whatever value is currently in the Purchase Price field — it is not automatically synced to either MAO number above, so double-check it against them.",
     formulas: [
       {
         name: "Buyer hard costs",
-        expression: "Final rehab + holding total + retail commission + closing costs + mansion tax",
+        expression: "Final rehab + holding total + total acquisition costs + retail commission + closing costs + mansion tax",
         note: "Seller retail expense is intentionally excluded.",
       },
       {
@@ -231,7 +321,7 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
       {
         name: "Wholesale fee",
         expression: "(Adjusted ARV − projected buyer total costs) × wholesale %",
-        note: "Rows use 10%, 20%, 30%, 40%, 50%, 55%, 60%, 65%, 70%, and 75%. This is the wholesaler's assignment fee.",
+        note: "Rows use 0%, 10%, 20%, 30%, 40%, 50%, 55%, 60%, 65%, 70%, and 75%. This is the wholesaler's assignment fee — the 0% row has none at all.",
       },
       {
         name: "Investor sell price",
@@ -250,15 +340,27 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
       },
       {
         name: "Out of pocket",
-        expression: "Purchase price + final rehab cost + holding total + wholesale fee",
+        expression: "Unfinanced purchase equity + unfinanced rehab equity + holding + acquisition costs + wholesale fee",
         note: "Retail exit costs (commission, closing costs, mansion tax) are not included in this column.",
-        why: "This column is meant to represent cash the buyer actually has to put in. Retail exit costs are reasonable to leave out because they're typically settled out of the sale proceeds at the closing table, not paid from the buyer's account beforehand. Holding costs are different — they're paid monthly out of pocket (or drawn from a loan the buyer still has to service) over the life of the deal, so they belong here. An earlier version of this table left holding costs out of Out of Pocket while still subtracting them from Profit, which overstated Cash-on-Cash — that mismatch is now fixed.",
+        why: "Cash-on-cash must use actual investor equity, not financed principal. Purchase equity equals purchase price × (1 − Purchase Price Financed %), and rehab equity uses the same calculation with Rehab Budget Financed %. Holding costs, points, closing costs, and the assignment fee are directly paid cash, so they remain in the denominator.",
       },
       {
         name: "Cash-on-cash",
         expression: "Profit ÷ out of pocket",
         note: "Returns 0% when out of pocket is not greater than zero. Shown in red when negative.",
-        why: "For this percentage to mean anything, the numerator (money made) and denominator (money put in) need to cover the same costs. Since Profit is already net of holding costs, Out of Pocket has to include them too, or the return looks better than it actually is.",
+        why: "For this percentage to mean anything, the numerator (money made) and denominator (money put in) need to cover the same costs. Since Profit is already net of holding and acquisition costs, Out of Pocket has to include them too, or the return looks better than it actually is.",
+      },
+      {
+        name: "Recommended wholesale balance",
+        expression: "Highest wholesale fee among rows maintaining at least 12% investor cash-on-cash",
+        note: "The 0% no-assignment baseline and negative assignment fees are excluded. If no row meets 12%, the table shows a warning instead of a recommendation.",
+        why: "The 12% minimum protects the modeled end-investor return while the selection of the highest qualifying wholesale fee maximizes your assignment opportunity.",
+      },
+      {
+        name: "Annualized cash-on-cash",
+        expression: "Cash-on-cash × (12 ÷ months until sold, floored at 1 month)",
+        note: "A separate column next to Cash-on-Cash. Shown in red when negative.",
+        why: "Total-hold-period return alone rewards long holds and short holds identically as long as the percentage matches, which isn't how tying up capital actually works. Annualizing puts every row on the same 12-month footing regardless of how many months the deal actually takes.",
       },
     ],
   },
@@ -350,6 +452,10 @@ export default function FormulasPage() {
             <li>&ldquo;Adjusted As-Is Value&rdquo; means after the same discounts plus market adjustment, for an as-is novation exit.</li>
             <li>There are two distinct MAO numbers — Novation (as-is) and ARV-based (rehab exit). They are expected to differ; use the one matching your exit strategy.</li>
             <li>Invalid comp rows, and comps whose flood-zone tag doesn&apos;t match the subject, do not count toward averages.</li>
+            <li>Comp confidence notes flag when a value rests on 0-1 comps or an average age over 180 days.</li>
+            <li>Rehab, holding, and acquisition costs (financing points, closing costs) all flow into Out of Pocket; retail exit costs do not, since those settle from sale proceeds.</li>
+            <li>The wholesale table&apos;s 0% row has no assignment fee — it&apos;s the baseline for buying and flipping the deal yourself.</li>
+            <li>Annualized Cash-on-Cash lets you compare deals with different hold periods on equal footing.</li>
             <li>Red values in the outputs and wholesale table mean that figure is negative.</li>
             <li>Displayed currency may be rounded, while calculations use full precision.</li>
           </ul>

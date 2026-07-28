@@ -219,10 +219,23 @@ button {
   border-color: color-mix(in srgb, var(--line-strong) 80%, var(--primary));
 }
 
+details.card > summary {
+  border-radius: 16px;
+  transition: background 0.15s ease;
+}
+
+details.card > summary::marker {
+  color: var(--primary);
+}
+
+details.card > summary:hover {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
 .section-card {
-  padding: 14px;
+  padding: 12px 14px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .title {
@@ -234,6 +247,39 @@ button {
 
 .muted {
   color: var(--text-muted);
+}
+
+.context-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.context-help span {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+}
+
+.context-help:hover {
+  text-decoration: underline;
+}
+
+.context-help:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
 
 .topbar {
@@ -304,7 +350,7 @@ button {
 .field {
   width: 100%;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--surface);

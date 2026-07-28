@@ -1,6 +1,7 @@
 "use client";
 
-import type { DealInput, DealOutput, DamageType, RehabType } from "@/lib/dealCalc";
+import Link from "next/link";
+import type { DealInput, DealOutput, DamageType, DealType, RehabType } from "@/lib/dealCalc";
 import { autoMonthlyMortgage } from "@/lib/dealCalc";
 import { NumberInput } from "./NumberInput";
 import { CompTable } from "./CompTable";
@@ -19,20 +20,34 @@ function pctForInput(decimal: number) {
   return Number((decimal * 100).toFixed(4));
 }
 
-function autoMonthlyMortgagePlaceholder(purchasePrice: number) {
-  const assumed = autoMonthlyMortgage(purchasePrice);
+function autoMonthlyMortgagePlaceholder(deal: DealInput, rehabCost: number) {
+  const assumed = autoMonthlyMortgage({
+    purchasePrice: deal.purchasePrice,
+    rehabCost,
+    financePurchaseLtvPct: deal.financePurchaseLtvPct,
+    financeRehabLtvPct: deal.financeRehabLtvPct,
+    interestRatePct: deal.interestRatePct,
+  });
   return `Auto ${assumed.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 })}`;
 }
 
-export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
+export function DealAssumptionSections({ deal, onChange, out }: DealEditorProps & { out?: DealOutput | null }) {
   const set = (patch: Partial<DealInput>) => onChange({ ...deal, ...patch });
 
   return (
     <>
-      <div className="section-card card" style={{ gap: 12 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Property and Core Assumptions</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          <label className="input-wrap">
+            <div className="label">Deal Type</div>
+            <select className="field" value={deal.dealType} onChange={(e) => set({ dealType: e.target.value as DealType })}>
+              <option value="Cash">Cash</option>
+              <option value="Novation">Novation</option>
+            </select>
+          </label>
+
           <NumberInput
             label="ARV Override"
             value={deal.inputArvOverride}
@@ -64,10 +79,73 @@ export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
             onChange={(v) => set({ rehabCustomAmount: v ?? 0 })}
             step={1000}
           />
+          <NumberInput
+            label="Rehab Contingency (%)"
+            value={pctForInput(deal.rehabContingencyPct)}
+            onChange={(v) => set({ rehabContingencyPct: (v ?? 10) / 100 })}
+            step={1}
+          />
         </div>
       </div>
 
-      <div className="section-card card" style={{ gap: 12 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 900 }}>Financing and Acquisition Costs</div>
+          <Link href="/formulas#holding" className="context-help">
+            <span aria-hidden="true">?</span> What does LTV mean and when is it used?
+          </Link>
+        </div>
+        <div className="muted" style={{ fontSize: 11, lineHeight: 1.5 }}>
+          These assumptions model the <strong>end investor&apos;s financing</strong> after buying the assigned deal from you.
+          <strong> LTV means loan-to-value</strong>: the loan divided by the property&apos;s value. Investors and lenders use it
+          before acquisition to size the loan, estimate required equity, and evaluate leverage risk. In this calculator, Purchase
+          Price Financed is a simplified acquisition-financing percentage; Rehab Budget Financed is technically closer to
+          loan-to-cost because it measures the financed share of the rehab budget.
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          <NumberInput
+            label="Purchase Price Financed (%)"
+            value={pctForInput(deal.financePurchaseLtvPct)}
+            onChange={(v) => set({ financePurchaseLtvPct: (v ?? 90) / 100 })}
+            step={1}
+          />
+          <NumberInput
+            label="Rehab Budget Financed (%)"
+            value={pctForInput(deal.financeRehabLtvPct)}
+            onChange={(v) => set({ financeRehabLtvPct: (v ?? 100) / 100 })}
+            step={1}
+          />
+          <NumberInput
+            label="Interest Rate (%)"
+            value={pctForInput(deal.interestRatePct)}
+            onChange={(v) => set({ interestRatePct: (v ?? 10) / 100 })}
+            step={0.25}
+          />
+          <NumberInput
+            label="Loan Points (%)"
+            value={pctForInput(deal.pointsPct)}
+            onChange={(v) => set({ pointsPct: (v ?? 2) / 100 })}
+            step={0.5}
+          />
+          <NumberInput
+            label="Acquisition Closing Costs (%)"
+            value={pctForInput(deal.acquisitionClosingCostPct)}
+            onChange={(v) => set({ acquisitionClosingCostPct: (v ?? 2) / 100 })}
+            step={0.5}
+          />
+        </div>
+        <div className="muted" style={{ fontSize: 11 }}>
+          Loan amount = (homeowner purchase price × Purchase Price Financed %) + (final rehab cost × Rehab Budget Financed %).
+          One point equals 1% of the loan amount. Acquisition closing costs cover entry-side items such as title, attorney,
+          recording, and transfer charges.
+          Interest becomes a monthly holding cost; points and acquisition closing costs are one-time entry costs. Leave Monthly
+          Mortgage blank to estimate interest-only financing automatically. Entering 0 activates all-cash mode, overriding both
+          financing percentages and removing the modeled loan, interest, and points.
+        </div>
+      </div>
+
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Holding Costs and Fees</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
@@ -100,7 +178,7 @@ export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
             value={deal.monthlyMortgage}
             onChange={(v) => set({ monthlyMortgage: v })}
             step={50}
-            placeholder={autoMonthlyMortgagePlaceholder(deal.purchasePrice)}
+            placeholder={autoMonthlyMortgagePlaceholder(deal, out?.rehabFinalCost ?? 0)}
           />
           <NumberInput
             label="Monthly Other Holding"
@@ -124,7 +202,7 @@ export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
             step={0.1}
           />
           <NumberInput
-            label="Seller Retail Expense (%)"
+            label="End-Investor Retail Resale Allowance (%)"
             value={pctForInput(deal.sellerRetailExpensePct)}
             onChange={(v) => set({ sellerRetailExpensePct: (v ?? 7) / 100 })}
             step={0.1}
@@ -141,7 +219,7 @@ export function DealForm({ deal, out, onChange, showAssumptionSections = true }:
   const emptyAges = [null, null, null, null, null] as Array<number | null>;
 
   return (
-    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+    <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
       <div className="section-card card">
         <div style={{ fontWeight: 900 }}>Subject Property</div>
 
@@ -200,7 +278,7 @@ export function DealForm({ deal, out, onChange, showAssumptionSections = true }:
         onChange={(v) => set({ asIsActive: v })}
       />
 
-      <div className="section-card card" style={{ gap: 12 }}>
+      <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Novation Assumptions</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
@@ -238,7 +316,7 @@ export function DealForm({ deal, out, onChange, showAssumptionSections = true }:
         onChange={(v) => set({ arvActive: v })}
       />
 
-      {showAssumptionSections ? <DealAssumptionSections deal={deal} onChange={onChange} /> : null}
+      {showAssumptionSections ? <DealAssumptionSections deal={deal} onChange={onChange} out={out} /> : null}
     </div>
   );
 }

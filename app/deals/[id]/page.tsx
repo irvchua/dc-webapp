@@ -7,7 +7,7 @@ import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
 import { loadDeal, upsertDeal } from "@/lib/storage";
 import { subscribeToAuthChanges } from "@/lib/firebaseAuth";
-import { DealAssumptionSections, DealForm } from "@/components/DealForm";
+import { DealForm } from "@/components/DealForm";
 import { DealOutputs } from "@/components/DealOutputs";
 
 function formatSavedAt(value: string | null | undefined) {
@@ -135,7 +135,7 @@ export default function DealPage() {
         style={{
           display: "grid",
           gridTemplateColumns: stackColumns ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: 14,
+          gap: 10,
           alignItems: "start",
         }}
       >
@@ -145,10 +145,9 @@ export default function DealPage() {
           onChange={(next) => {
             setDeal(next);
           }}
-          showAssumptionSections={false}
         />
 
-        <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+        <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
           <div className="section-card card" style={{ gap: 6 }}>
             <div className="label">Purchase Price</div>
             <input
@@ -165,16 +164,10 @@ export default function DealPage() {
             />
           </div>
 
-          <DealAssumptionSections
-            deal={deal}
-            onChange={(next) => {
-              setDeal(next);
-            }}
-          />
-
           {out && (
             <DealOutputs
               out={out}
+              deal={deal}
               onSetPurchasePrice={(value) => setDeal({ ...deal, purchasePrice: value })}
             />
           )}

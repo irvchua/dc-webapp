@@ -26,6 +26,7 @@ export function makeDefaultDeal(partial?: Partial<DealInput>): DealInput {
     propertyLabel: partial?.propertyLabel ?? "New Deal",
     propertyAddress: "",
     ownerName: "",
+    dealType: "Cash",
     subjectSqft: 1500,
     lotSize: null,
     bedBath: "",
@@ -46,6 +47,7 @@ export function makeDefaultDeal(partial?: Partial<DealInput>): DealInput {
     rehabType: "Partial Loss",
     damageType: "Light",
     rehabCustomAmount: 0,
+    rehabContingencyPct: 0.1,
 
     monthsUntilSold: 4,
     annualHoa: 0,
@@ -53,6 +55,12 @@ export function makeDefaultDeal(partial?: Partial<DealInput>): DealInput {
     annualTaxes: 0,
     monthlyMortgage: null,
     monthlyOtherHolding: 0,
+
+    financePurchaseLtvPct: 0.9,
+    financeRehabLtvPct: 1,
+    interestRatePct: 0.1,
+    pointsPct: 0.02,
+    acquisitionClosingCostPct: 0.02,
 
     retailCommissionPct: 0.06,
     retailClosingCostsPct: 0.035,
