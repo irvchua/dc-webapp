@@ -69,7 +69,12 @@ export function DealOutputs({ out }: { out: DealOutput }) {
 
       <div className="section-card card" style={{ gap: 8 }}>
         <div style={{ fontWeight: 900 }}>Holding and Fees</div>
-        <MetricRow label="Holding / Month" helper="HOA/12 + insurance/12 + taxes/12 + monthly mortgage + monthly other." value={money(out.holdingMonthly)} />
+        <MetricRow
+          label={out.mortgageAutoApplied ? "Monthly Mortgage (Auto)" : "Monthly Mortgage"}
+          helper={out.mortgageAutoApplied ? "Auto estimate: purchase price × 10% ÷ 12." : "Entered monthly mortgage; zero represents an all-cash deal."}
+          value={money(out.monthlyMortgageUsed)}
+        />
+        <MetricRow label="Holding / Month" helper="HOA/12 + insurance/12 + taxes/12 + resolved monthly mortgage + monthly other." value={money(out.holdingMonthly)} />
         <MetricRow label="Holding Total" helper="Holding / Month x months until sold." value={money(out.holdingTotal)} />
         <MetricRow label="Fees to Retail" helper="Retail commission + closing costs + seller retail expense + mansion tax." value={money(out.feesToRetail)} />
         <MetricRow label="Mansion Tax %" helper="Tiered rate based on adjusted ARV." value={pct(out.mansionTaxPct)} />

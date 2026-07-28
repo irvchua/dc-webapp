@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { DealInput } from "@/lib/dealCalc";
 import { calcDeal } from "@/lib/dealCalc";
@@ -109,6 +110,9 @@ export default function DealPage() {
         <div style={{ fontWeight: 800, fontSize: 18, marginInline: "auto" }}>{deal.propertyLabel}</div>
 
         <div style={{ display: "grid", justifyItems: "end", gap: 6 }}>
+          <Link href="/formulas" className="btn" style={{ padding: "7px 11px", fontSize: 13 }}>
+            Formula Guide
+          </Link>
           <button
             onClick={async () => {
               const nowIso = new Date().toISOString();

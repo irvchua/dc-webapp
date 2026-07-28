@@ -51,7 +51,7 @@ export function makeDefaultDeal(partial?: Partial<DealInput>): DealInput {
     annualHoa: 0,
     annualInsurance: 0,
     annualTaxes: 0,
-    monthlyMortgage: 0,
+    monthlyMortgage: null,
     monthlyOtherHolding: 0,
 
     retailCommissionPct: 0.06,

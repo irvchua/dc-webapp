@@ -105,7 +105,9 @@ function migrateLegacyDeal(rawValue: unknown): DealInput {
     annualHoa: toNumber(raw.annualHoa ?? raw.annualHOA, base.annualHoa),
     annualInsurance: toNumber(raw.annualInsurance, base.annualInsurance),
     annualTaxes: toNumber(raw.annualTaxes, base.annualTaxes),
-    monthlyMortgage: toNumber(raw.monthlyMortgage, 0),
+    monthlyMortgage: raw.monthlyMortgage === null
+      ? null
+      : toNumber(raw.monthlyMortgage, 0),
     monthlyOtherHolding: toNumber(raw.monthlyOtherHolding, 0),
 
     retailCommissionPct: toNumber(raw.retailCommissionPct, base.retailCommissionPct),

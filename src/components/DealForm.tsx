@@ -98,10 +98,9 @@ export function DealAssumptionSections({ deal, onChange }: DealEditorProps) {
           <NumberInput
             label="Monthly Mortgage"
             value={deal.monthlyMortgage}
-            onChange={(v) => set({ monthlyMortgage: v ?? 0 })}
+            onChange={(v) => set({ monthlyMortgage: v })}
             step={50}
             placeholder={autoMonthlyMortgagePlaceholder(deal.purchasePrice)}
-            zeroAsEmpty
           />
           <NumberInput
             label="Monthly Other Holding"

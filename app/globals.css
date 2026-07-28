@@ -118,25 +118,66 @@ button {
 
 .auth-controls {
   position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 100;
+  top: 12px;
+  left: 12px;
+  z-index: 110;
+  width: fit-content;
+  max-width: 260px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 75%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(10px);
 }
 
 .auth-pill {
-  max-width: 220px;
+  max-width: 190px;
   padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 65%, transparent);
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-btn {
+  width: auto;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 85%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.auth-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(15, 23, 42, 0.16);
+}
+
+.auth-btn-signout {
+  border-color: color-mix(in srgb, var(--danger-line) 75%, transparent);
+  background: color-mix(in srgb, var(--danger-bg) 85%, transparent);
+  color: var(--danger-text);
 }
 
 .btn:disabled {
@@ -398,15 +439,29 @@ button {
   }
 
   .auth-controls {
-    top: 10px;
-    left: 10px;
-    max-width: calc(100vw - 120px);
+    top: 8px;
+    left: 8px;
+    max-width: calc(100vw - 100px);
+    gap: 6px;
+    padding: 5px;
   }
 
   .auth-pill {
-    max-width: 140px;
-    padding: 6px 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 7px 8px;
     font-size: 11px;
+  }
+
+  .auth-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .auth-btn {
+    padding: 7px 9px;
+    font-size: 12px;
   }
 
   .shell {
@@ -610,144 +665,186 @@ button {
 }
 
 
-/* Auth controls polish */
-.auth-controls {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 110;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--line-strong) 75%, transparent);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-card);
+.formula-shell {
+  max-width: 1180px;
+  padding-top: 76px;
 }
 
-.auth-pill {
-  max-width: 190px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
-  background: color-mix(in srgb, var(--surface-soft) 65%, transparent);
+.formula-hero {
+  padding: clamp(22px, 4vw, 38px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.formula-eyebrow {
+  margin-bottom: 8px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.formula-title {
+  font-size: clamp(30px, 5vw, 48px);
+  max-width: 760px;
+}
+
+.formula-lead {
+  max-width: 760px;
+  margin: 12px 0 0;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.formula-nav {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.formula-nav a {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border-radius: 9px;
   color: var(--text-muted);
   font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.auth-btn {
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--line-strong) 85%, transparent);
-  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
-  color: var(--text);
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
+  font-weight: 800;
   text-decoration: none;
 }
 
-.auth-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 14px rgba(15, 23, 42, 0.16);
+.formula-nav a:hover,
+.formula-nav a:focus-visible {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  outline-offset: 2px;
 }
 
-.auth-btn-signout {
-  border-color: color-mix(in srgb, var(--danger-line) 75%, transparent);
-  background: color-mix(in srgb, var(--danger-bg) 85%, transparent);
-  color: var(--danger-text);
-}
-
-@media (max-width: 640px) {
-  .auth-controls {
-    top: 8px;
-    left: 8px;
-    max-width: calc(100vw - 116px);
-    gap: 6px;
-    padding: 5px;
-  }
-
-  .auth-pill {
-    max-width: 120px;
-    padding: 7px 8px;
-    font-size: 11px;
-  }
-
-  .auth-btn {
-    padding: 7px 9px;
-    font-size: 12px;
-  }
-}
-
-.auth-controls {
-  width: fit-content;
-  max-width: 230px;
+.formula-layout {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
 }
 
-.auth-actions {
+.formula-content {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 16px;
+  min-width: 0;
 }
 
-.auth-btn {
-  width: 100%;
-  text-align: center;
+.formula-section {
+  padding: clamp(18px, 3vw, 28px);
+  scroll-margin-top: 76px;
 }
 
-@media (max-width: 640px) {
-  .auth-controls {
-    max-width: 170px;
-  }
-
-  .auth-actions {
-    gap: 5px;
-  }
+.formula-section-heading {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 20px;
 }
 
-/* Mobile auth controls responsive override */
-.auth-controls {
+.formula-section h2,
+.formula-note h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.formula-section-heading p {
+  margin: 5px 0 0;
+  line-height: 1.55;
+}
+
+.formula-step {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface));
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.formula-list {
+  display: grid;
+  gap: 10px;
+}
+
+.formula-row {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.formula-name {
+  margin-bottom: 8px;
+  font-weight: 850;
+}
+
+.formula-row code {
+  display: block;
   width: fit-content;
-  max-width: 260px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  color: var(--primary-strong);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: normal;
 }
 
-.auth-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.formula-row p {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
-.auth-btn {
-  width: auto;
-  text-align: center;
-  white-space: nowrap;
+.formula-note {
+  position: sticky;
+  top: 20px;
+  padding: 20px;
+}
+
+.formula-note ul {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.formula-tier-table {
+  min-width: 440px;
+}
+
+@media (max-width: 860px) {
+  .formula-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .formula-note {
+    position: static;
+    grid-row: 1;
+  }
 }
 
 @media (max-width: 640px) {
-  .auth-controls {
-    max-width: calc(100vw - 100px);
-    gap: 6px;
+  .formula-hero {
+    flex-direction: column;
   }
 
-  .auth-pill {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .auth-actions {
-    flex: 0 0 auto;
-    gap: 5px;
+  .formula-title {
+    font-size: 30px;
   }
 }
