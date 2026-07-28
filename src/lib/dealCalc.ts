@@ -64,7 +64,7 @@ export type DealInput = {
   annualHoa: number;
   annualInsurance: number;
   annualTaxes: number;
-  monthlyMortgage: number;
+  monthlyMortgage: number | null;
   monthlyOtherHolding: number;
 
   retailCommissionPct: number;
@@ -107,6 +107,8 @@ export type DealOutput = {
 
   hoaMonthly: number;
   insuranceMonthly: number;
+  monthlyMortgageUsed: number;
+  mortgageAutoApplied: boolean;
   holdingMonthly: number;
   holdingTotal: number;
 
@@ -259,9 +261,11 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const hoaMonthly = toNumber(input.annualHoa) / 12;
   const insuranceMonthly = toNumber(input.annualInsurance) / 12;
   const taxesMonthly = toNumber(input.annualTaxes) / 12;
-  const mortgageInput = toNumber(input.monthlyMortgage);
-  const monthlyMortgage = mortgageInput > 0 ? mortgageInput : autoMonthlyMortgage(input.purchasePrice);
-  const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + monthlyMortgage + toNumber(input.monthlyOtherHolding);
+  const mortgageAutoApplied = input.monthlyMortgage === null;
+  const monthlyMortgageUsed = mortgageAutoApplied
+    ? autoMonthlyMortgage(input.purchasePrice)
+    : Math.max(0, toNumber(input.monthlyMortgage));
+  const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + monthlyMortgageUsed + toNumber(input.monthlyOtherHolding);
   const holdingTotal = holdingMonthly * Math.max(0, toNumber(input.monthsUntilSold, 4));
 
   const retailCommission = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailCommissionPct, 0.06) : null;
@@ -345,6 +349,8 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
 
     hoaMonthly,
     insuranceMonthly,
+    monthlyMortgageUsed,
+    mortgageAutoApplied,
     holdingMonthly,
     holdingTotal,
 

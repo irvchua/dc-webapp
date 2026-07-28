@@ -72,17 +72,22 @@ export default function HomePageClient() {
           <div className="muted" style={{ fontSize: 14 }}>Summary dashboard</div>
         </div>
 
-        <button
-          onClick={async () => {
-            const next = makeDefaultDeal();
-            const saved = await upsertDeal(next);
-            setDeals((prev) => [saved, ...prev.filter((d) => d.id !== saved.id)]);
-          }}
-          className="btn btn-primary"
-          style={{ padding: "11px 16px" }}
-        >
-          <span className="btn-content"><span className="btn-icon" aria-hidden="true">+</span><span>New Deal</span></span>
-        </button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href="/formulas" className="btn">
+            <span className="btn-content"><span className="btn-icon" aria-hidden="true">ƒ</span><span>Formula Guide</span></span>
+          </Link>
+          <button
+            onClick={async () => {
+              const next = makeDefaultDeal();
+              const saved = await upsertDeal(next);
+              setDeals((prev) => [saved, ...prev.filter((d) => d.id !== saved.id)]);
+            }}
+            className="btn btn-primary"
+            style={{ padding: "11px 16px" }}
+          >
+            <span className="btn-content"><span className="btn-icon" aria-hidden="true">+</span><span>New Deal</span></span>
+          </button>
+        </div>
       </header>
 
       {sorted.length === 0 ? (
