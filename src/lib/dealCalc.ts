@@ -83,6 +83,9 @@ export type DealOutput = {
   soldAsIsValue: number | null;
   activeAsIsValue: number | null;
   combinedAsIsValue: number | null;
+  asIsFloodDiscount: number;
+  asIsDoubleYellowDiscount: number;
+  totalAsIsAdjustments: number;
   adjustedAsIsValue: number | null;
   maoNovation: number | null;
 
@@ -133,18 +136,27 @@ export type DealOutput = {
   };
 };
 
-function avgCompPpsf(comps: Comp[]): number | null {
-  const values = comps.map((c) => {
+function avgCompPpsf(comps: Comp[], subjectFloodZone: boolean): number | null {
+  const matchingFloodStatus = comps.filter((c) => c.floodZone === subjectFloodZone);
+  const pool = matchingFloodStatus.length ? matchingFloodStatus : comps;
+
+  const values = pool.map((c) => {
     if (!isFiniteNumber(c.price) || !isFiniteNumber(c.sqft) || c.sqft <= 0) return null;
     return safeDivide(c.price, c.sqft);
   });
   return averageIfNonZero(values);
 }
 
-function avgValue(a: number | null, b: number | null): number | null {
-  const nums = [a, b].filter((n): n is number => isFiniteNumber(n) && n > 0);
-  if (!nums.length) return null;
-  return nums.reduce((sum, n) => sum + n, 0) / nums.length;
+const SOLD_WEIGHT = 0.7;
+const ACTIVE_WEIGHT = 0.3;
+
+function avgValue(sold: number | null, active: number | null): number | null {
+  const soldValid = isFiniteNumber(sold) && sold > 0;
+  const activeValid = isFiniteNumber(active) && active > 0;
+  if (soldValid && activeValid) return sold * SOLD_WEIGHT + active * ACTIVE_WEIGHT;
+  if (soldValid) return sold;
+  if (activeValid) return active;
+  return null;
 }
 
 function rehabTypeCostPerSqft(type: RehabType): number {
@@ -177,6 +189,7 @@ function makeWholesaleRows(params: {
   purchasePrice: number;
   lastSavedAt?: string | null;
   rehabCost: number;
+  holdingTotal: number;
   hardCosts: number;
 }): WholesaleRow[] {
   const pctSteps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75];
@@ -189,7 +202,9 @@ function makeWholesaleRows(params: {
     const investorSellPrice = params.purchasePrice + wholesaleFee;
     const allIn = totalCost + wholesaleFee;
     const profit = params.arv - allIn;
-    const outOfPocket = params.purchasePrice + params.rehabCost + wholesaleFee;
+    // Holding costs are cash the buyer pays out over the hold period (not settled from sale
+    // proceeds like retail commission/closing costs are), so they belong in the cash-invested base.
+    const outOfPocket = params.purchasePrice + params.rehabCost + params.holdingTotal + wholesaleFee;
     const cashOnCash = outOfPocket > 0 ? profit / outOfPocket : 0;
 
     return {
@@ -215,23 +230,35 @@ export function autoMonthlyMortgage(purchasePrice: number): number {
 }
 
 export function calcDeal(input: DealInput, now = new Date()): DealOutput {
-  const soldAsIsPpsf = avgCompPpsf(input.asIsSold);
-  const activeAsIsPpsf = avgCompPpsf(input.asIsActive);
+  const soldAsIsPpsf = avgCompPpsf(input.asIsSold, input.floodZone);
+  const activeAsIsPpsf = avgCompPpsf(input.asIsActive, input.floodZone);
 
   const soldAsIsValue = isFiniteNumber(soldAsIsPpsf) ? soldAsIsPpsf * input.subjectSqft : null;
   const activeAsIsValue = isFiniteNumber(activeAsIsPpsf) ? activeAsIsPpsf * input.subjectSqft : null;
 
   const combinedAsIsValue = avgValue(soldAsIsValue, activeAsIsValue);
-  const adjustedAsIsValue = isFiniteNumber(combinedAsIsValue)
-    ? combinedAsIsValue * (1 - toNumber(input.marketAdjustmentPct, 0.1))
+
+  const asIsFloodDiscount = isFiniteNumber(combinedAsIsValue) && input.floodZone
+    ? combinedAsIsValue * 0.15
+    : 0;
+  const asIsDoubleYellowDiscount = isFiniteNumber(combinedAsIsValue) && input.doubleYellow
+    ? combinedAsIsValue * 0.05
+    : 0;
+  const totalAsIsAdjustments = asIsFloodDiscount + asIsDoubleYellowDiscount;
+  const adjustedCombinedAsIsValue = isFiniteNumber(combinedAsIsValue)
+    ? combinedAsIsValue - totalAsIsAdjustments
+    : null;
+
+  const adjustedAsIsValue = isFiniteNumber(adjustedCombinedAsIsValue)
+    ? adjustedCombinedAsIsValue * (1 - toNumber(input.marketAdjustmentPct, 0.1))
     : null;
 
   const maoNovation = isFiniteNumber(adjustedAsIsValue)
     ? adjustedAsIsValue - adjustedAsIsValue * toNumber(input.novationClosingFeePct, 0.1) - toNumber(input.desiredProfit, 30000)
     : null;
 
-  const soldArvPpsf = avgCompPpsf(input.arvSold);
-  const activeArvPpsf = avgCompPpsf(input.arvActive);
+  const soldArvPpsf = avgCompPpsf(input.arvSold, input.floodZone);
+  const activeArvPpsf = avgCompPpsf(input.arvActive, input.floodZone);
 
   const soldArvValue = isFiniteNumber(soldArvPpsf) ? soldArvPpsf * input.subjectSqft : null;
   const activeArvValue = isFiniteNumber(activeArvPpsf) ? activeArvPpsf * input.subjectSqft : null;
@@ -301,6 +328,7 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
           arv: adjustedArv,
           purchasePrice: toNumber(input.purchasePrice),
           rehabCost: rehabFinalCost,
+          holdingTotal,
           hardCosts: rehabFinalCost + holdingTotal + (isFiniteNumber(feesToRetail) ? feesToRetail - (isFiniteNumber(sellerRetailExpense) ? sellerRetailExpense : 0) : 0),
         })
       : [];
@@ -325,6 +353,9 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     soldAsIsValue,
     activeAsIsValue,
     combinedAsIsValue,
+    asIsFloodDiscount,
+    asIsDoubleYellowDiscount,
+    totalAsIsAdjustments,
     adjustedAsIsValue,
     maoNovation,
 

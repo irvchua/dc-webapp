@@ -15,16 +15,16 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
       <div style={{ fontWeight: 800 }}>{title}</div>
 
       <div className="table-wrap">
-        <table className="table" style={{ minWidth: 1060, tableLayout: "auto" }}>
+        <table className="table" style={{ minWidth: 1140, tableLayout: "auto" }}>
           <colgroup>
-            {["19%", "9%", "10%", "11%", "10%", "11%", "8%", "14%", "8%"].map((w, idx) => (
+            {["17%", "8%", "9%", "10%", "9%", "10%", "7%", "12%", "7%", "11%"].map((w, idx) => (
               <col key={`${w}-${idx}`} style={{ width: w }} />
             ))}
           </colgroup>
 
           <thead>
             <tr>
-              {["Address", "Bed/Bath", "Year Built", "Lot Size (Sqft)", "Sqft", "Price", "$ / Sqft", "Date", "Days"].map((h) => (
+              {["Address", "Bed/Bath", "Year Built", "Lot Size (Sqft)", "Sqft", "Price", "$ / Sqft", "Date", "Days", "Flood"].map((h) => (
                 <th key={h}>{h}</th>
               ))}
             </tr>
@@ -131,6 +131,18 @@ export function CompTable({ title, comps, agedDays, onChange }: Props) {
                     />
                   </td>
                   <td className="muted" style={{ fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{agedDays[idx] ?? "-"}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={c.floodZone}
+                      title="Comp is in a flood zone"
+                      onChange={(e) => {
+                        const next = comps.slice();
+                        next[idx] = { ...next[idx], floodZone: e.target.checked };
+                        onChange(next);
+                      }}
+                    />
+                  </td>
                 </tr>
               );
             })}

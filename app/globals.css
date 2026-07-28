@@ -810,6 +810,18 @@ button {
   line-height: 1.5;
 }
 
+.formula-why {
+  margin-top: 6px !important;
+  padding: 8px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+.formula-why strong {
+  color: var(--primary-strong);
+}
+
 .formula-note {
   position: sticky;
   top: 20px;
