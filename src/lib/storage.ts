@@ -73,6 +73,7 @@ function migrateLegacyDeal(rawValue: unknown): DealInput {
         ? raw.propertyLabel
         : "",
     ownerName: typeof raw.ownerName === "string" ? raw.ownerName : "",
+    dealType: raw.dealType === "Novation" || raw.dealType === "Cash" ? raw.dealType : base.dealType,
     subjectSqft: toNumber(raw.subjectSqft, base.subjectSqft),
     lotSize: Number.isFinite(raw.lotSize) ? Number(raw.lotSize) : null,
     bedBath: typeof raw.bedBath === "string" ? raw.bedBath : "",
@@ -100,15 +101,22 @@ function migrateLegacyDeal(rawValue: unknown): DealInput {
         : base.rehabType,
     damageType: raw.damageType === "Light" || raw.damageType === "Moderate" || raw.damageType === "Heavy" ? raw.damageType : base.damageType,
     rehabCustomAmount: toNumber(raw.rehabCustomAmount, 0),
+    rehabContingencyPct: toNumber(raw.rehabContingencyPct, base.rehabContingencyPct),
 
     monthsUntilSold: toNumber(raw.monthsUntilSold, base.monthsUntilSold),
     annualHoa: toNumber(raw.annualHoa ?? raw.annualHOA, base.annualHoa),
     annualInsurance: toNumber(raw.annualInsurance, base.annualInsurance),
     annualTaxes: toNumber(raw.annualTaxes, base.annualTaxes),
-    monthlyMortgage: raw.monthlyMortgage === null
+    monthlyMortgage: raw.monthlyMortgage === null || raw.monthlyMortgage === undefined
       ? null
       : toNumber(raw.monthlyMortgage, 0),
     monthlyOtherHolding: toNumber(raw.monthlyOtherHolding, 0),
+
+    financePurchaseLtvPct: toNumber(raw.financePurchaseLtvPct, base.financePurchaseLtvPct),
+    financeRehabLtvPct: toNumber(raw.financeRehabLtvPct, base.financeRehabLtvPct),
+    interestRatePct: toNumber(raw.interestRatePct, base.interestRatePct),
+    pointsPct: toNumber(raw.pointsPct, base.pointsPct),
+    acquisitionClosingCostPct: toNumber(raw.acquisitionClosingCostPct, base.acquisitionClosingCostPct),
 
     retailCommissionPct: toNumber(raw.retailCommissionPct, base.retailCommissionPct),
     retailClosingCostsPct: toNumber(raw.retailClosingCostsPct, base.retailClosingCostsPct),

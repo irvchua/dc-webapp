@@ -42,12 +42,25 @@ function MoonIcon() {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => getPreferredTheme());
+  const [theme, setTheme] = useState<Theme>("light");
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const preferredTheme = getPreferredTheme();
+      setTheme(preferredTheme);
+      applyTheme(preferredTheme);
+      setIsMounted(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
     applyTheme(theme);
     window.localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
+  }, [isMounted, theme]);
 
   const isDark = theme === "dark";
 
@@ -58,7 +71,6 @@ export default function ThemeToggle() {
       onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
       className="theme-toggle"
       title={isDark ? "Light mode" : "Dark mode"}
-      suppressHydrationWarning
     >
       <span className="theme-toggle-icon">{isDark ? <SunIcon /> : <MoonIcon />}</span>
       <span>{isDark ? "Light" : "Dark"}</span>

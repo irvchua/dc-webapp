@@ -25,10 +25,14 @@ test("a null mortgage uses the disclosed automatic estimate", () => {
   });
 
   const output = calcDeal(deal);
+  const expectedMonthlyMortgage = (
+    deal.purchasePrice * deal.financePurchaseLtvPct +
+    output.rehabFinalCost * deal.financeRehabLtvPct
+  ) * deal.interestRatePct / 12;
 
   assert.equal(output.mortgageAutoApplied, true);
-  assert.equal(output.monthlyMortgageUsed, 400_000 * 0.1 / 12);
-  assert.equal(output.holdingTotal, 400_000 * 0.1 / 12 * 4);
+  assert.equal(output.monthlyMortgageUsed, expectedMonthlyMortgage);
+  assert.equal(output.holdingTotal, expectedMonthlyMortgage * 4);
 });
 
 test("a negative mortgage is clamped to zero instead of triggering auto", () => {

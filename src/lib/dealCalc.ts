@@ -10,6 +10,7 @@ import {
 
 export type RehabType = "Partial Loss" | "Total Loss" | "New Construction";
 export type DamageType = "Light" | "Moderate" | "Heavy";
+export type DealType = "Novation" | "Cash";
 
 export type Comp = {
   address: string;
@@ -22,6 +23,12 @@ export type Comp = {
   floodZone: boolean;
 };
 
+export type CompConfidence = {
+  validCount: number;
+  totalCount: number;
+  avgAgeDays: number | null;
+};
+
 export type WholesaleRow = {
   pct: number;
   wholesaleFee: number;
@@ -31,6 +38,7 @@ export type WholesaleRow = {
   allIn: number;
   profit: number;
   cashOnCash: number;
+  annualizedCashOnCash: number;
   outOfPocket: number;
 };
 
@@ -39,6 +47,7 @@ export type DealInput = {
   propertyLabel: string;
   propertyAddress: string;
   ownerName: string;
+  dealType: DealType;
   subjectSqft: number;
   lotSize: number | null;
   bedBath: string;
@@ -59,6 +68,7 @@ export type DealInput = {
   rehabType: RehabType;
   damageType: DamageType;
   rehabCustomAmount: number;
+  rehabContingencyPct: number;
 
   monthsUntilSold: number;
   annualHoa: number;
@@ -66,6 +76,12 @@ export type DealInput = {
   annualTaxes: number;
   monthlyMortgage: number | null;
   monthlyOtherHolding: number;
+
+  financePurchaseLtvPct: number;
+  financeRehabLtvPct: number;
+  interestRatePct: number;
+  pointsPct: number;
+  acquisitionClosingCostPct: number;
 
   retailCommissionPct: number;
   retailClosingCostsPct: number;
@@ -101,6 +117,8 @@ export type DealOutput = {
   rehabBaseCost: number;
   rehabDamageCost: number;
   rehabCalculatedCost: number;
+  rehabBeforeContingency: number;
+  rehabContingency: number;
   rehabFinalCost: number;
 
   floodDiscount: number;
@@ -108,12 +126,18 @@ export type DealOutput = {
   totalArvAdjustments: number;
   adjustedArv: number | null;
 
+  loanAmount: number;
+  financingPoints: number;
+  acquisitionClosingCosts: number;
+  totalAcquisitionCosts: number;
+
   hoaMonthly: number;
   insuranceMonthly: number;
   monthlyMortgageUsed: number;
   mortgageAutoApplied: boolean;
   holdingMonthly: number;
   holdingTotal: number;
+  monthsUntilSold: number;
 
   retailCommission: number | null;
   retailClosingCosts: number | null;
@@ -125,8 +149,18 @@ export type DealOutput = {
   totalWalkawayCosts: number | null;
   totalWalkawayCash: number | null;
   offerRanges: { pct: number; offer: number }[];
+  cashOffer70: number | null;
+  recommendedDealType: DealType | null;
+  recommendationDifference: number | null;
 
   wholesaleRows: WholesaleRow[];
+
+  compConfidence: {
+    asIsSold: CompConfidence;
+    asIsActive: CompConfidence;
+    arvSold: CompConfidence;
+    arvActive: CompConfidence;
+  };
 
   agedCompDays: {
     asIsSold: Array<number | null>;
@@ -136,15 +170,26 @@ export type DealOutput = {
   };
 };
 
-function avgCompPpsf(comps: Comp[], subjectFloodZone: boolean): number | null {
-  const matchingFloodStatus = comps.filter((c) => c.floodZone === subjectFloodZone);
-  const pool = matchingFloodStatus.length ? matchingFloodStatus : comps;
+function matchFloodPool(comps: Comp[], subjectFloodZone: boolean): Comp[] {
+  const matching = comps.filter((c) => c.floodZone === subjectFloodZone);
+  return matching.length ? matching : comps;
+}
 
+function avgCompPpsf(comps: Comp[], subjectFloodZone: boolean): number | null {
+  const pool = matchFloodPool(comps, subjectFloodZone);
   const values = pool.map((c) => {
     if (!isFiniteNumber(c.price) || !isFiniteNumber(c.sqft) || c.sqft <= 0) return null;
     return safeDivide(c.price, c.sqft);
   });
   return averageIfNonZero(values);
+}
+
+function compConfidenceFor(comps: Comp[], subjectFloodZone: boolean, now: Date): CompConfidence {
+  const pool = matchFloodPool(comps, subjectFloodZone);
+  const valid = pool.filter((c) => isFiniteNumber(c.price) && isFiniteNumber(c.sqft) && (c.sqft as number) > 0);
+  const ages = valid.map((c) => daysSince(c.date, now)).filter((n): n is number => n !== null);
+  const avgAgeDays = ages.length ? Math.round(ages.reduce((sum, n) => sum + n, 0) / ages.length) : null;
+  return { validCount: valid.length, totalCount: comps.length, avgAgeDays };
 }
 
 const SOLD_WEIGHT = 0.7;
@@ -184,49 +229,79 @@ function mansionTaxPct(arv: number): number {
   return 0.035;
 }
 
-function makeWholesaleRows(params: {
+// 0 represents a principal flip with no wholesale assignment fee at all.
+export const WHOLESALE_PCT_STEPS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75];
+export const ARV_OFFER_STEPS = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0];
+
+type WholesaleRowParams = {
   arv: number;
   purchasePrice: number;
-  lastSavedAt?: string | null;
   rehabCost: number;
   holdingTotal: number;
+  acquisitionCosts: number;
   hardCosts: number;
-}): WholesaleRow[] {
-  const pctSteps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75];
+  monthsUntilSold: number;
+};
 
+function wholesaleRowForPct(params: WholesaleRowParams, pct: number): WholesaleRow {
   const totalCost = params.purchasePrice + params.hardCosts;
   const feeBase = params.arv - totalCost;
+  const wholesaleFee = feeBase * pct;
+  const investorSellPrice = params.purchasePrice + wholesaleFee;
+  const allIn = totalCost + wholesaleFee;
+  const profit = params.arv - allIn;
+  // Holding costs and acquisition costs (closing costs, loan points) are cash the buyer pays
+  // out directly (not settled from sale proceeds like retail commission/closing costs are), so
+  // they belong in the cash-invested base.
+  const outOfPocket = params.purchasePrice + params.rehabCost + params.holdingTotal + params.acquisitionCosts + wholesaleFee;
+  const cashOnCash = outOfPocket > 0 ? profit / outOfPocket : 0;
+  // Floored at 1 month so very short holds don't produce meaningless four-digit annualized figures.
+  const annualizedCashOnCash = cashOnCash * (12 / Math.max(1, params.monthsUntilSold));
 
-  return pctSteps.map((pct) => {
-    const wholesaleFee = feeBase * pct;
-    const investorSellPrice = params.purchasePrice + wholesaleFee;
-    const allIn = totalCost + wholesaleFee;
-    const profit = params.arv - allIn;
-    // Holding costs are cash the buyer pays out over the hold period (not settled from sale
-    // proceeds like retail commission/closing costs are), so they belong in the cash-invested base.
-    const outOfPocket = params.purchasePrice + params.rehabCost + params.holdingTotal + wholesaleFee;
-    const cashOnCash = outOfPocket > 0 ? profit / outOfPocket : 0;
-
-    return {
-      pct,
-      wholesaleFee,
-      investorSellPrice,
-      hardCosts: params.hardCosts,
-      totalCost,
-      allIn,
-      profit,
-      cashOnCash,
-      outOfPocket,
-    };
-  });
+  return {
+    pct,
+    wholesaleFee,
+    investorSellPrice,
+    hardCosts: params.hardCosts,
+    totalCost,
+    allIn,
+    profit,
+    cashOnCash,
+    annualizedCashOnCash,
+    outOfPocket,
+  };
 }
+
+export function makeWholesaleRows(params: WholesaleRowParams): WholesaleRow[] {
+  return WHOLESALE_PCT_STEPS.map((pct) => wholesaleRowForPct(params, pct));
+}
+
 function toNumber(value: unknown, fallback = 0): number {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-export function autoMonthlyMortgage(purchasePrice: number): number {
-  return Math.max(0, toNumber(purchasePrice)) * 0.1 / 12;
+export function loanAmountFor(params: {
+  purchasePrice: number;
+  rehabCost: number;
+  financePurchaseLtvPct: number;
+  financeRehabLtvPct: number;
+}): number {
+  return (
+    Math.max(0, toNumber(params.purchasePrice)) * Math.max(0, toNumber(params.financePurchaseLtvPct, 0.9)) +
+    Math.max(0, toNumber(params.rehabCost)) * Math.max(0, toNumber(params.financeRehabLtvPct, 1))
+  );
+}
+
+export function autoMonthlyMortgage(params: {
+  purchasePrice: number;
+  rehabCost: number;
+  financePurchaseLtvPct: number;
+  financeRehabLtvPct: number;
+  interestRatePct: number;
+}): number {
+  const loanAmount = loanAmountFor(params);
+  return (loanAmount * Math.max(0, toNumber(params.interestRatePct, 0.1))) / 12;
 }
 
 export function calcDeal(input: DealInput, now = new Date()): DealOutput {
@@ -273,7 +348,9 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const rehabBaseCost = Math.max(0, toNumber(input.subjectSqft)) * rehabCostPerSqft;
   const rehabDamageCost = rehabBaseCost * damageMultiplier;
   const rehabCalculatedCost = rehabBaseCost + rehabDamageCost;
-  const rehabFinalCost = IF(toNumber(input.rehabCustomAmount) > 0, toNumber(input.rehabCustomAmount), rehabCalculatedCost);
+  const rehabBeforeContingency = IF(toNumber(input.rehabCustomAmount) > 0, toNumber(input.rehabCustomAmount), rehabCalculatedCost);
+  const rehabContingency = rehabBeforeContingency * Math.max(0, toNumber(input.rehabContingencyPct, 0.1));
+  const rehabFinalCost = rehabBeforeContingency + rehabContingency;
 
   const floodDiscount = isFiniteNumber(arvBeforeAdjustments) && input.floodZone
     ? arvBeforeAdjustments * 0.15
@@ -285,15 +362,27 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const totalArvAdjustments = floodDiscount + doubleYellowDiscount;
   const adjustedArv = isFiniteNumber(arvBeforeAdjustments) ? arvBeforeAdjustments - totalArvAdjustments : null;
 
+  const loanAmount = loanAmountFor({
+    purchasePrice: input.purchasePrice,
+    rehabCost: rehabFinalCost,
+    financePurchaseLtvPct: input.financePurchaseLtvPct,
+    financeRehabLtvPct: input.financeRehabLtvPct,
+  });
+  const financingPoints = loanAmount * Math.max(0, toNumber(input.pointsPct, 0.02));
+
   const hoaMonthly = toNumber(input.annualHoa) / 12;
   const insuranceMonthly = toNumber(input.annualInsurance) / 12;
   const taxesMonthly = toNumber(input.annualTaxes) / 12;
   const mortgageAutoApplied = input.monthlyMortgage === null;
   const monthlyMortgageUsed = mortgageAutoApplied
-    ? autoMonthlyMortgage(input.purchasePrice)
+    ? (loanAmount * Math.max(0, toNumber(input.interestRatePct, 0.1))) / 12
     : Math.max(0, toNumber(input.monthlyMortgage));
   const holdingMonthly = hoaMonthly + insuranceMonthly + taxesMonthly + monthlyMortgageUsed + toNumber(input.monthlyOtherHolding);
-  const holdingTotal = holdingMonthly * Math.max(0, toNumber(input.monthsUntilSold, 4));
+  const monthsUntilSold = Math.max(0, toNumber(input.monthsUntilSold, 4));
+  const holdingTotal = holdingMonthly * monthsUntilSold;
+
+  const acquisitionClosingCosts = Math.max(0, toNumber(input.purchasePrice)) * Math.max(0, toNumber(input.acquisitionClosingCostPct, 0.02));
+  const totalAcquisitionCosts = acquisitionClosingCosts + financingPoints;
 
   const retailCommission = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailCommissionPct, 0.06) : null;
   const retailClosingCosts = isFiniteNumber(adjustedArv) ? adjustedArv * toNumber(input.retailClosingCostsPct, 0.035) : null;
@@ -310,17 +399,29 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
       : null;
 
   const totalWalkawayCosts =
-    isFiniteNumber(feesToRetail) ? feesToRetail + holdingTotal + rehabFinalCost : null;
+    isFiniteNumber(feesToRetail) ? feesToRetail + holdingTotal + rehabFinalCost + totalAcquisitionCosts : null;
 
   const totalWalkawayCash =
     isFiniteNumber(adjustedArv) && isFiniteNumber(totalWalkawayCosts)
       ? adjustedArv - totalWalkawayCosts
       : null;
 
-  const offerSteps = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0];
   const offerRanges = isFiniteNumber(totalWalkawayCash)
-    ? offerSteps.map((pct) => ({ pct, offer: totalWalkawayCash * pct }))
+    ? ARV_OFFER_STEPS.map((pct) => ({ pct, offer: totalWalkawayCash * pct }))
     : [];
+  const cashOffer70 = offerRanges.find((range) => range.pct === 0.7)?.offer ?? null;
+  const recommendedDealType: DealType | null =
+    isFiniteNumber(maoNovation) && isFiniteNumber(cashOffer70)
+      ? maoNovation >= cashOffer70 ? "Novation" : "Cash"
+      : isFiniteNumber(maoNovation)
+        ? "Novation"
+        : isFiniteNumber(cashOffer70)
+          ? "Cash"
+          : null;
+  const recommendationDifference =
+    isFiniteNumber(maoNovation) && isFiniteNumber(cashOffer70)
+      ? Math.abs(maoNovation - cashOffer70)
+      : null;
 
   const wholesaleRows =
     isFiniteNumber(adjustedArv)
@@ -329,9 +430,18 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
           purchasePrice: toNumber(input.purchasePrice),
           rehabCost: rehabFinalCost,
           holdingTotal,
-          hardCosts: rehabFinalCost + holdingTotal + (isFiniteNumber(feesToRetail) ? feesToRetail - (isFiniteNumber(sellerRetailExpense) ? sellerRetailExpense : 0) : 0),
+          acquisitionCosts: totalAcquisitionCosts,
+          hardCosts: rehabFinalCost + holdingTotal + totalAcquisitionCosts + (isFiniteNumber(feesToRetail) ? feesToRetail - (isFiniteNumber(sellerRetailExpense) ? sellerRetailExpense : 0) : 0),
+          monthsUntilSold,
         })
       : [];
+
+  const compConfidence = {
+    asIsSold: compConfidenceFor(input.asIsSold, input.floodZone, now),
+    asIsActive: compConfidenceFor(input.asIsActive, input.floodZone, now),
+    arvSold: compConfidenceFor(input.arvSold, input.floodZone, now),
+    arvActive: compConfidenceFor(input.arvActive, input.floodZone, now),
+  };
 
   const agedCompDays = {
     asIsSold: input.asIsSold.map((c) => daysSince(c.date, now)),
@@ -371,6 +481,8 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     rehabBaseCost,
     rehabDamageCost,
     rehabCalculatedCost,
+    rehabBeforeContingency,
+    rehabContingency,
     rehabFinalCost,
 
     floodDiscount,
@@ -378,12 +490,18 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     totalArvAdjustments,
     adjustedArv,
 
+    loanAmount,
+    financingPoints,
+    acquisitionClosingCosts,
+    totalAcquisitionCosts,
+
     hoaMonthly,
     insuranceMonthly,
     monthlyMortgageUsed,
     mortgageAutoApplied,
     holdingMonthly,
     holdingTotal,
+    monthsUntilSold,
 
     retailCommission,
     retailClosingCosts,
@@ -395,23 +513,14 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     totalWalkawayCosts,
     totalWalkawayCash,
     offerRanges,
+    cashOffer70,
+    recommendedDealType,
+    recommendationDifference,
 
     wholesaleRows,
+
+    compConfidence,
 
     agedCompDays,
   };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

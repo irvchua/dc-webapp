@@ -219,10 +219,23 @@ button {
   border-color: color-mix(in srgb, var(--line-strong) 80%, var(--primary));
 }
 
+details.card > summary {
+  border-radius: 16px;
+  transition: background 0.15s ease;
+}
+
+details.card > summary::marker {
+  color: var(--primary);
+}
+
+details.card > summary:hover {
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
 .section-card {
-  padding: 14px;
+  padding: 12px 14px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .title {
@@ -304,7 +317,7 @@ button {
 .field {
   width: 100%;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: var(--surface);
