@@ -172,7 +172,12 @@ export default function DealPage() {
             }}
           />
 
-          {out && <DealOutputs out={out} />}
+          {out && (
+            <DealOutputs
+              out={out}
+              onSetPurchasePrice={(value) => setDeal({ ...deal, purchasePrice: value })}
+            />
+          )}
         </div>
       </div>
     </main>
