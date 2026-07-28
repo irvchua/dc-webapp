@@ -165,9 +165,15 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
     intro: "Annual expenses are converted to monthly values before they are added to the holding total.",
     formulas: [
       {
+        name: "LTV and financing coverage",
+        expression: "LTV = loan amount ÷ property value",
+        note: "Investors and lenders use LTV before acquisition to size the loan, estimate required equity, and evaluate leverage risk.",
+        why: "The calculator's Purchase Price Financed percentage is a simplified acquisition-financing assumption. Rehab Budget Financed is technically closer to loan-to-cost because it measures the financed share of a budget rather than property value.",
+      },
+      {
         name: "Loan amount",
-        expression: "(Purchase price × Purchase Financed LTV %) + (Rehab final cost × Rehab Financed LTV %)",
-        note: "Purchase LTV defaults to 90%, Rehab LTV defaults to 100%. Set either to 0% to model that portion as unfinanced.",
+        expression: "(Purchase price × Purchase Price Financed %) + (Rehab final cost × Rehab Budget Financed %)",
+        note: "Purchase financing defaults to 90% and rehab financing defaults to 100%. Set either to 0% to model that portion as unfinanced.",
         why: "Hard-money and private financing on a flip usually covers both the purchase and the rehab, drawn as work completes — not just the purchase price. Modeling both pieces separately lets the loan amount reflect what's actually financed instead of a single flat guess.",
       },
       {
@@ -178,8 +184,8 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
       {
         name: "Monthly mortgage default",
         expression: "Loan amount × Interest Rate % ÷ 12 (interest-only)",
-        note: "Used only when the Monthly Mortgage field is left blank. Entering 0 explicitly means an intentional all-cash deal and is used as-is, not replaced.",
-        why: "Blank and zero mean different things to a real buyer — blank means \"I haven't figured out financing yet, estimate it for me,\" while zero means \"I'm paying cash, there is no mortgage payment.\" Treating both the same would silently inflate holding costs on every genuinely all-cash deal. This used to be a flat 10% of purchase price only, which ignored rehab financing and points entirely — it now reflects the real loan amount and rate above.",
+        note: "Used only when Monthly Mortgage is blank. Entering 0 activates all-cash mode: purchase/rehab financing, loan amount, interest, and points all become zero.",
+        why: "Blank means \"estimate financing for me,\" while zero means \"there is no loan.\" All-cash mode must suppress the entire financing model—not just the monthly payment—or fictitious points would reduce the deal's projected returns.",
       },
       {
         name: "Acquisition closing costs",
@@ -334,9 +340,9 @@ const sections: Array<{ id: string; title: string; intro: string; formulas: Form
       },
       {
         name: "Out of pocket",
-        expression: "Purchase price + final rehab cost + holding total + total acquisition costs + wholesale fee",
+        expression: "Unfinanced purchase equity + unfinanced rehab equity + holding + acquisition costs + wholesale fee",
         note: "Retail exit costs (commission, closing costs, mansion tax) are not included in this column.",
-        why: "This column is meant to represent cash the buyer actually has to put in. Retail exit costs are reasonable to leave out because they're typically settled out of the sale proceeds at the closing table, not paid from the buyer's account beforehand. Holding costs and acquisition costs (points, closing costs) are different — they're paid directly by the buyer, so they belong here. An earlier version of this table left holding costs out of Out of Pocket while still subtracting them from Profit, which overstated Cash-on-Cash — that mismatch is now fixed, and acquisition costs are held to the same standard.",
+        why: "Cash-on-cash must use actual investor equity, not financed principal. Purchase equity equals purchase price × (1 − Purchase Price Financed %), and rehab equity uses the same calculation with Rehab Budget Financed %. Holding costs, points, closing costs, and the assignment fee are directly paid cash, so they remain in the denominator.",
       },
       {
         name: "Cash-on-cash",

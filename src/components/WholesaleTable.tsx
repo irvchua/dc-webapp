@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { WholesaleRow } from "@/lib/dealCalc";
 
 const MIN_INVESTOR_CASH_ON_CASH = 0.12;
@@ -43,7 +44,12 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
     <div className="section-card card">
       <div style={{ fontWeight: 900 }}>Wholesale Assignment Table</div>
       <div className="metric-tile" style={{ display: "grid", gap: 5 }}>
-        <div style={{ fontWeight: 800 }}>What does Wholesale % mean?</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 800 }}>What does Wholesale % mean?</div>
+          <Link href="/formulas#wholesale" className="context-help">
+            <span aria-hidden="true">?</span> See the complete wholesale formula
+          </Link>
+        </div>
         <div className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
           It is your share of the available deal spread—not a percentage of ARV or the homeowner purchase price.
           Available spread = Adjusted ARV − homeowner purchase price − end investor project costs. Your wholesale fee equals
@@ -116,9 +122,9 @@ export function WholesaleTable({ rows }: { rows: WholesaleRow[] }) {
         The original homeowner receives the Purchase Price. You receive the Wholesale Fee as the assignment fee. The end investor
         pays the Investor Sell Price to take over the deal. The 0% row has no assignment fee at all — it&apos;s the baseline for buying
         and flipping the deal yourself with no wholesaler in between. Wholesale Fee = (ARV - Projected Buyer Total Costs) x Wholesale %.
-        All In = Projected Buyer Total Costs + Wholesale Fee. Out of Pocket = purchase price + rehab + holding total + acquisition
-        costs (points, closing costs) + wholesale fee — holding and acquisition costs are included because they are cash the investor
-        pays directly, unlike retail commission/closing costs which settle out of sale proceeds. Annualized CoC scales Cash-on-Cash
+        All In = Projected Buyer Total Costs + Wholesale Fee. Out of Pocket = unfinanced purchase equity + unfinanced rehab
+        equity + holding costs + acquisition costs + wholesale fee. Financed purchase and rehab amounts are excluded because
+        cash-on-cash measures the investor&apos;s actual cash invested. Annualized CoC scales Cash-on-Cash
         to a 12-month basis so deals with different hold periods can be compared. Red values mean that row loses money for the end
         investor. <strong>Recommended Balance</strong> highlights the row with the highest wholesale fee that still preserves at
         least a 12% projected cash-on-cash return for the end investor. The 0% baseline and negative assignment fees are excluded.

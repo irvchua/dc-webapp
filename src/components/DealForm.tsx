@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { DealInput, DealOutput, DamageType, DealType, RehabType } from "@/lib/dealCalc";
 import { autoMonthlyMortgage } from "@/lib/dealCalc";
 import { NumberInput } from "./NumberInput";
@@ -88,17 +89,29 @@ export function DealAssumptionSections({ deal, onChange, out }: DealEditorProps 
       </div>
 
       <div className="section-card card" style={{ gap: 8 }}>
-        <div style={{ fontWeight: 900 }}>Financing and Acquisition Costs</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 900 }}>Financing and Acquisition Costs</div>
+          <Link href="/formulas#holding" className="context-help">
+            <span aria-hidden="true">?</span> What does LTV mean and when is it used?
+          </Link>
+        </div>
+        <div className="muted" style={{ fontSize: 11, lineHeight: 1.5 }}>
+          These assumptions model the <strong>end investor&apos;s financing</strong> after buying the assigned deal from you.
+          <strong> LTV means loan-to-value</strong>: the loan divided by the property&apos;s value. Investors and lenders use it
+          before acquisition to size the loan, estimate required equity, and evaluate leverage risk. In this calculator, Purchase
+          Price Financed is a simplified acquisition-financing percentage; Rehab Budget Financed is technically closer to
+          loan-to-cost because it measures the financed share of the rehab budget.
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           <NumberInput
-            label="Purchase Financed (LTV %)"
+            label="Purchase Price Financed (%)"
             value={pctForInput(deal.financePurchaseLtvPct)}
             onChange={(v) => set({ financePurchaseLtvPct: (v ?? 90) / 100 })}
             step={1}
           />
           <NumberInput
-            label="Rehab Financed (LTV %)"
+            label="Rehab Budget Financed (%)"
             value={pctForInput(deal.financeRehabLtvPct)}
             onChange={(v) => set({ financeRehabLtvPct: (v ?? 100) / 100 })}
             step={1}
@@ -110,7 +123,7 @@ export function DealAssumptionSections({ deal, onChange, out }: DealEditorProps 
             step={0.25}
           />
           <NumberInput
-            label="Points"
+            label="Loan Points (%)"
             value={pctForInput(deal.pointsPct)}
             onChange={(v) => set({ pointsPct: (v ?? 2) / 100 })}
             step={0.5}
@@ -123,8 +136,12 @@ export function DealAssumptionSections({ deal, onChange, out }: DealEditorProps 
           />
         </div>
         <div className="muted" style={{ fontSize: 11 }}>
-          Loan amount = (purchase price × Purchase LTV) + (final rehab cost × Rehab LTV). Points and acquisition closing costs are
-          one-time costs paid at purchase; interest is the auto-estimated monthly mortgage below, unless you enter one manually.
+          Loan amount = (homeowner purchase price × Purchase Price Financed %) + (final rehab cost × Rehab Budget Financed %).
+          One point equals 1% of the loan amount. Acquisition closing costs cover entry-side items such as title, attorney,
+          recording, and transfer charges.
+          Interest becomes a monthly holding cost; points and acquisition closing costs are one-time entry costs. Leave Monthly
+          Mortgage blank to estimate interest-only financing automatically. Entering 0 activates all-cash mode, overriding both
+          financing percentages and removing the modeled loan, interest, and points.
         </div>
       </div>
 

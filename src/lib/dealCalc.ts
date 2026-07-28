@@ -126,6 +126,8 @@ export type DealOutput = {
   totalArvAdjustments: number;
   adjustedArv: number | null;
 
+  financePurchaseLtvPct: number;
+  financeRehabLtvPct: number;
   loanAmount: number;
   financingPoints: number;
   acquisitionClosingCosts: number;
@@ -237,6 +239,8 @@ type WholesaleRowParams = {
   arv: number;
   purchasePrice: number;
   rehabCost: number;
+  financePurchaseLtvPct: number;
+  financeRehabLtvPct: number;
   holdingTotal: number;
   acquisitionCosts: number;
   hardCosts: number;
@@ -250,10 +254,18 @@ function wholesaleRowForPct(params: WholesaleRowParams, pct: number): WholesaleR
   const investorSellPrice = params.purchasePrice + wholesaleFee;
   const allIn = totalCost + wholesaleFee;
   const profit = params.arv - allIn;
-  // Holding costs and acquisition costs (closing costs, loan points) are cash the buyer pays
-  // out directly (not settled from sale proceeds like retail commission/closing costs are), so
-  // they belong in the cash-invested base.
-  const outOfPocket = params.purchasePrice + params.rehabCost + params.holdingTotal + params.acquisitionCosts + wholesaleFee;
+  const purchaseEquity =
+    Math.max(0, params.purchasePrice) *
+    (1 - Math.min(1, Math.max(0, params.financePurchaseLtvPct)));
+  const rehabEquity =
+    Math.max(0, params.rehabCost) *
+    (1 - Math.min(1, Math.max(0, params.financeRehabLtvPct)));
+  const outOfPocket =
+    purchaseEquity +
+    rehabEquity +
+    params.holdingTotal +
+    params.acquisitionCosts +
+    wholesaleFee;
   const cashOnCash = outOfPocket > 0 ? profit / outOfPocket : 0;
   // Floored at 1 month so very short holds don't produce meaningless four-digit annualized figures.
   const annualizedCashOnCash = cashOnCash * (12 / Math.max(1, params.monthsUntilSold));
@@ -362,11 +374,14 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
   const totalArvAdjustments = floodDiscount + doubleYellowDiscount;
   const adjustedArv = isFiniteNumber(arvBeforeAdjustments) ? arvBeforeAdjustments - totalArvAdjustments : null;
 
+  const isExplicitAllCash = input.monthlyMortgage === 0;
+  const effectivePurchaseLtvPct = isExplicitAllCash ? 0 : input.financePurchaseLtvPct;
+  const effectiveRehabLtvPct = isExplicitAllCash ? 0 : input.financeRehabLtvPct;
   const loanAmount = loanAmountFor({
     purchasePrice: input.purchasePrice,
     rehabCost: rehabFinalCost,
-    financePurchaseLtvPct: input.financePurchaseLtvPct,
-    financeRehabLtvPct: input.financeRehabLtvPct,
+    financePurchaseLtvPct: effectivePurchaseLtvPct,
+    financeRehabLtvPct: effectiveRehabLtvPct,
   });
   const financingPoints = loanAmount * Math.max(0, toNumber(input.pointsPct, 0.02));
 
@@ -429,6 +444,8 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
           arv: adjustedArv,
           purchasePrice: toNumber(input.purchasePrice),
           rehabCost: rehabFinalCost,
+          financePurchaseLtvPct: effectivePurchaseLtvPct,
+          financeRehabLtvPct: effectiveRehabLtvPct,
           holdingTotal,
           acquisitionCosts: totalAcquisitionCosts,
           hardCosts: rehabFinalCost + holdingTotal + totalAcquisitionCosts + (isFiniteNumber(feesToRetail) ? feesToRetail - (isFiniteNumber(sellerRetailExpense) ? sellerRetailExpense : 0) : 0),
@@ -490,6 +507,8 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     totalArvAdjustments,
     adjustedArv,
 
+    financePurchaseLtvPct: effectivePurchaseLtvPct,
+    financeRehabLtvPct: effectiveRehabLtvPct,
     loanAmount,
     financingPoints,
     acquisitionClosingCosts,
@@ -522,5 +541,42 @@ export function calcDeal(input: DealInput, now = new Date()): DealOutput {
     compConfidence,
 
     agedCompDays,
+  };
+}
+
+export function calcCashOfferScenario(
+  input: DealInput,
+  offerPct: number,
+  now = new Date()
+): { offer: number | null; output: DealOutput } {
+  const pct = Math.min(1, Math.max(0, toNumber(offerPct)));
+  let candidatePrice = 0;
+  let output = calcDeal({ ...input, purchasePrice: candidatePrice }, now);
+
+  for (let iteration = 0; iteration < 100; iteration += 1) {
+    if (!isFiniteNumber(output.totalWalkawayCash)) return { offer: null, output };
+
+    const offer = output.totalWalkawayCash * pct;
+    const nextPrice = Math.max(0, offer);
+
+    if (Math.abs(nextPrice - candidatePrice) < 0.01) {
+      const finalOutput = calcDeal({ ...input, purchasePrice: nextPrice }, now);
+      return {
+        offer: isFiniteNumber(finalOutput.totalWalkawayCash)
+          ? finalOutput.totalWalkawayCash * pct
+          : null,
+        output: finalOutput,
+      };
+    }
+
+    candidatePrice = nextPrice;
+    output = calcDeal({ ...input, purchasePrice: candidatePrice }, now);
+  }
+
+  return {
+    offer: isFiniteNumber(output.totalWalkawayCash)
+      ? output.totalWalkawayCash * pct
+      : null,
+    output,
   };
 }

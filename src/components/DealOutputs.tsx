@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
-import type { CompConfidence, DealOutput, DealType } from "@/lib/dealCalc";
-import { ARV_OFFER_STEPS, WHOLESALE_PCT_STEPS, makeWholesaleRows } from "@/lib/dealCalc";
+import type { CompConfidence, DealInput, DealOutput } from "@/lib/dealCalc";
+import { ARV_OFFER_STEPS, WHOLESALE_PCT_STEPS, calcCashOfferScenario, makeWholesaleRows } from "@/lib/dealCalc";
 import { WholesaleTable } from "@/components/WholesaleTable";
 
 function money(n: number | null) {
@@ -52,11 +53,11 @@ function ConfidenceNote({ c }: { c: CompConfidence }) {
 
 export function DealOutputs({
   out,
-  dealType,
+  deal,
   onSetPurchasePrice,
 }: {
   out: DealOutput;
-  dealType: DealType;
+  deal: DealInput;
   onSetPurchasePrice?: (value: number) => void;
 }) {
   const [selectedPct, setSelectedPct] = useState<number | null>(null);
@@ -78,8 +79,13 @@ export function DealOutputs({
     return out.rehabFinalCost + out.holdingTotal + out.totalAcquisitionCosts + (out.feesToRetail - out.sellerRetailExpense);
   }, [out.feesToRetail, out.sellerRetailExpense, out.rehabFinalCost, out.holdingTotal, out.totalAcquisitionCosts]);
 
-  const cashOfferToSeller = isNum(out.totalWalkawayCash) ? out.totalWalkawayCash * cashOfferPct : null;
-  const recommendedDealType: DealType | null =
+  const cashScenario = useMemo(
+    () => calcCashOfferScenario(deal, cashOfferPct),
+    [deal, cashOfferPct]
+  );
+  const cashOfferToSeller = cashScenario.offer;
+  const cashScenarioOut = cashScenario.output;
+  const recommendedDealType =
     isNum(out.maoNovation) && isNum(cashOfferToSeller)
       ? out.maoNovation >= cashOfferToSeller ? "Novation" : "Cash"
       : isNum(out.maoNovation)
@@ -93,25 +99,32 @@ export function DealOutputs({
       : null;
 
   const investorRow = useMemo(() => {
-    if (cashOfferToSeller === null || !isNum(out.adjustedArv) || buyerCostsExclSellerRetailExpense === null) return null;
+    if (
+      cashOfferToSeller === null ||
+      !isNum(cashScenarioOut.adjustedArv) ||
+      !isNum(cashScenarioOut.feesToRetail) ||
+      !isNum(cashScenarioOut.sellerRetailExpense)
+    ) return null;
+    const candidateBuyerCosts =
+      cashScenarioOut.rehabFinalCost +
+      cashScenarioOut.holdingTotal +
+      cashScenarioOut.totalAcquisitionCosts +
+      (cashScenarioOut.feesToRetail - cashScenarioOut.sellerRetailExpense);
     const rows = makeWholesaleRows({
-      arv: out.adjustedArv,
+      arv: cashScenarioOut.adjustedArv,
       purchasePrice: cashOfferToSeller,
-      rehabCost: out.rehabFinalCost,
-      holdingTotal: out.holdingTotal,
-      acquisitionCosts: out.totalAcquisitionCosts,
-      hardCosts: buyerCostsExclSellerRetailExpense,
-      monthsUntilSold: out.monthsUntilSold,
+      rehabCost: cashScenarioOut.rehabFinalCost,
+      financePurchaseLtvPct: cashScenarioOut.financePurchaseLtvPct,
+      financeRehabLtvPct: cashScenarioOut.financeRehabLtvPct,
+      holdingTotal: cashScenarioOut.holdingTotal,
+      acquisitionCosts: cashScenarioOut.totalAcquisitionCosts,
+      hardCosts: candidateBuyerCosts,
+      monthsUntilSold: cashScenarioOut.monthsUntilSold,
     });
     return rows.find((r) => r.pct === investorSplitPct) ?? null;
   }, [
     cashOfferToSeller,
-    out.adjustedArv,
-    out.rehabFinalCost,
-    out.holdingTotal,
-    out.totalAcquisitionCosts,
-    out.monthsUntilSold,
-    buyerCostsExclSellerRetailExpense,
+    cashScenarioOut,
     investorSplitPct,
   ]);
 
@@ -171,7 +184,12 @@ export function DealOutputs({
       </CollapsibleCard>
 
       <div className="section-card card" style={{ gap: 8 }}>
-        <div style={{ fontWeight: 900 }}>Novation Offer vs. Cash Offer</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 900 }}>Novation Offer vs. Cash Offer</div>
+          <Link href="/formulas#comparison" className="context-help">
+            <span aria-hidden="true">?</span> Which deal type should I use?
+          </Link>
+        </div>
         <p className="muted" style={{ fontSize: 11, margin: 0 }}>
           Novation offer is priced off today&apos;s as-is value with no rehab. Cash offer is priced off ARV assuming a rehab-and-resell
           exit, then re-priced again for whichever investor takes the wholesale assignment. These will normally differ — pick the one
@@ -277,7 +295,9 @@ export function DealOutputs({
           helper={
             out.mortgageAutoApplied
               ? "Auto estimate: loan amount x interest rate ÷ 12 (interest-only). Leave blank for this; enter 0 for a genuinely all-cash deal."
-              : "Entered monthly mortgage; zero represents an all-cash deal."
+              : out.monthlyMortgageUsed === 0
+                ? "All-cash mode: loan amount, financed percentages, interest, and loan points are treated as zero."
+                : "Entered monthly mortgage amount."
           }
           value={money(out.monthlyMortgageUsed)}
         />
@@ -288,19 +308,24 @@ export function DealOutputs({
       </CollapsibleCard>
 
       <div className="section-card card" style={{ gap: 8 }}>
-        <div style={{ fontWeight: 900 }}>Offer Planning</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ fontWeight: 900 }}>Offer Planning</div>
+          <Link href="/formulas#offers" className="context-help">
+            <span aria-hidden="true">?</span> How are these offer amounts calculated?
+          </Link>
+        </div>
         <div
           className="metric-tile"
           style={{
             display: "grid",
             gap: 6,
-            borderColor: dealType === recommendedDealType ? "var(--success-line)" : "var(--warning-line)",
+            borderColor: deal.dealType === recommendedDealType ? "var(--success-line)" : "var(--warning-line)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
             <div>
               <div className="label">Selected Deal Type</div>
-              <div style={{ fontWeight: 900 }}>{dealType}</div>
+              <div style={{ fontWeight: 900 }}>{deal.dealType}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div className="label">Recommended Deal Type</div>
